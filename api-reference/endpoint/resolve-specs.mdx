@@ -2,3 +2,44 @@
 title: 'Resolve Specs'
 openapi: 'POST /resolve/specs'
 ---
+
+### Request Body
+
+The request body should be a JSON object with an `items` field containing an array of strings.
+
+<ParamField body="items" type="string[]" required>
+  An array of raw plant specification strings to be resolved.
+</ParamField>
+
+<ResponseExample>
+
+```json
+{
+  "results": [
+    {
+      "input_label": "400mm AS",
+      "match_confidence": "High",
+      "standard_data": {
+        "type": "Pot - Air Pruning",
+        "stage_order": 4,
+        "stage_name": "Advanced Production",
+        "is_biological": true,
+        "matching_strategy": "Volume",
+        "logistics": {
+          "tier": "Pallet",
+          "is_stackable": false,
+          "freight_efficiency": "Medium"
+        },
+        "quality_profile": {
+          "transplant_shock_risk": "Very Low",
+          "seasonal_restriction": "None",
+          "inspection_focus": "Desiccation"
+        },
+        "customer_note": "Superior root structure; requires more frequent watering until planted."
+      }
+    }
+  ]
+}
+```
+
+</ResponseExample>
