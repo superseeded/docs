@@ -1,0 +1,69 @@
+---
+title: "Processing Webhook"
+description: "Webhook endpoint for post-upload file processing"
+---
+
+## Internal Webhook
+
+**Endpoint:** `POST /v1/internal/tus-hook`
+
+This endpoint is called internally after a file is parsed. It's documented 
+here for transparency about the processing flow.
+
+## Flow
+
+1. File uploaded via Tus server.
+2. Parser extracts structured JSON.
+3. Webhook receives extracted data.
+4. Usage event is recorded.
+5. Harmonization engine resolves specs to growth equivalents.
+6. Response returned to Platform.
+
+## Request Schema
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `file_path` | string | Path to uploaded file |
+| `merchant_id` | string | From JWT claim |
+| `api_key_id` | string | Platform API key ID |
+| `extracted_data` | object | Parsed file content including file_metadata and line_items |
+
+## Response
+
+Returns enriched data with harmonization results:
+
+```json
+{
+  "success": true,
+  "usage": {
+    "is_billable": true,
+    "rows_processed": 42,
+    "file_origin": "external",
+    "month_totals": {
+      "month": "2024-01",
+      "is_active": true,
+      "row_count": 142,
+      "billable_row_count": 100
+    }
+  },
+  "enriched_data": [
+    {
+      "input_label": "400mm AS",
+      "match_confidence": "High",
+      "standard_data": {
+        "type": "Pot - Air Pruning",
+        "stage_name": "Advanced Production",
+        "stage_order": 4,
+        "logistics": {
+          "tier": "Pallet",
+          "is_stackable": false
+        },
+        "quality_profile": {
+          "transplant_shock_risk": "Very Low",
+          "customer_note": "Superior root structure; requires more frequent watering until planted."
+        }
+      }
+    }
+  ]
+}
+```

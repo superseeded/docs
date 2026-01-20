@@ -1,0 +1,53 @@
+---
+title: "Usage & Billing"
+description: "A risk-free, success-based pricing model designed for platforms."
+---
+
+## The "Active Supplier" Model
+
+We understand that your users (nurseries and suppliers) are seasonal. Some months are busy; others are quiet. A flat monthly subscription for every single user doesn't make sense.
+
+Instead, we use a **Pay-on-First-Use** model.
+
+<Note>
+  **The Philosophy:** You only pay for a supplier in the months where they actually derive value from the tool. If a supplier is dormant in July, your cost for them in July is **$0**.
+</Note>
+
+### How billing is triggered
+
+Our system tracks usage via the `merchant_id` you provide during the [Upload Delegation](/platform-integration/upload-delegation).
+
+1.  **State 0: Dormant**
+    * At the start of the month, all your merchants are reset to "Dormant."
+    * **Cost:** $0.00.
+
+2.  **State 1: Active**
+    * The moment a merchant uploads *one* billable file, they are flagged as "Active" for the current month.
+    * **Cost:** Triggers the base monthly fee (e.g., $15.00).
+    * **Allowance:** This activates their monthly quota (e.g., 500 line items).
+
+3.  **State 2: Overage**
+    * If an Active merchant exceeds their quota, additional rows are billed at a small per-unit rate.
+
+## Fair Use & Row Counts
+
+We measure usage in **Line Items (Rows)**, not "Pages" or "Files."
+
+* **Why?** A single PDF page could contain 5 plants or 100 plants. Charging by "Page" is unpredictable. Charging by "Row" aligns with the value your user gets (revenue per plant sold).
+* **The Cap:** Most plans include a generous "Row Cap" (e.g., 500 rows) within the base fee to cover 95% of standard usage without overages.
+
+## The "SuperSeeded Origin" Discount
+
+We are committed to cleaning up the industry's data pipeline. As part of this mission, we offer a **100% discount** on files that originate from [superseeded.ai](https://superseeded.ai).
+
+<Tip>
+  **Pro Tip for Platforms:** Encourage your customers to recommend SuperSeeded
+</Tip>
+
+| Origin Source | Billing Status | Impact on Quota |
+| :--- | :--- | :--- |
+| **Scanned PDF / Excel** | 🟢 **Billable** | Counts toward monthly Row Cap. Triggers "Active" fee. |
+| **superseeded.ai** | ⚪ **Free** | **Does not count.** Does not trigger "Active" fee. |
+
+### Identifying Free Files
+Our API automatically inspects the file metadata before processing. If a file is identified as `Producer: SuperSeeded_Engine`, we process it for free. You will see this reflected in your monthly usage report under `billable_rows` vs `total_rows`.
