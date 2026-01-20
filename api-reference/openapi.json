@@ -19,6 +19,62 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "summary": "Root Status",
+        "description": "Returns the status of the API",
+        "responses": {
+          "200": {
+            "description": "Status response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "service": {
+                      "type": "string",
+                      "example": "Pot Size Matcher API"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/match": {
+      "post": {
+        "summary": "Match Pot Sizes",
+        "description": "Match pot sizes from a list of strings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Match results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/plants": {
       "get": {
         "description": "Returns all plants from the system that the user has access to",
@@ -154,6 +210,42 @@
   },
   "components": {
     "schemas": {
+      "MatchRequest": {
+        "type": "object",
+        "required": [
+          "strings"
+        ],
+        "properties": {
+          "strings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MatchResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "original": {
+                  "type": "string"
+                },
+                "hierarchy_id": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Plant": {
         "required": [
           "name"
