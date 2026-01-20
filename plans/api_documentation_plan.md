@@ -7,7 +7,7 @@ I will document the new API endpoints by updating the OpenAPI specification and 
 ### 1. Update `api-reference/openapi.json`
 Add the new endpoints to the `paths` section and define necessary schemas in `components/schemas`.
 
-- **`GET /`**: Root status endpoint.
+- **`GET /`**: API status endpoint.
 - **`POST /match`**: Match pot sizes endpoint.
 - **Schemas**:
     - `MatchRequest`: `{"strings": ["..."]}`
@@ -19,7 +19,7 @@ Create two new files in `api-reference/endpoint/` that reference the OpenAPI def
 - **`api-reference/endpoint/root.mdx`**
     ```mdx
     ---
-    title: 'Root Status'
+    title: 'API Status'
     openapi: 'GET /'
     ---
     ```

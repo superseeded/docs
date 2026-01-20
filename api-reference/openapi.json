@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
+    "title": "EvergreenConnect API",
+    "description": "API for matching pot sizes and checking system status",
     "license": {
       "name": "MIT"
     },
@@ -10,18 +10,13 @@
   },
   "servers": [
     {
-      "url": "http://sandbox.mintlify.com"
-    }
-  ],
-  "security": [
-    {
-      "bearerAuth": []
+      "url": "http://localhost:8000"
     }
   ],
   "paths": {
     "/": {
       "get": {
-        "summary": "Root Status",
+        "summary": "API Status",
         "description": "Returns the status of the API",
         "responses": {
           "200": {
@@ -47,10 +42,15 @@
         }
       }
     },
-    "/match": {
+    "/resolve/specs": {
       "post": {
-        "summary": "Match Pot Sizes",
-        "description": "Match pot sizes from a list of strings",
+        "summary": "Resolve Specs",
+        "description": "Match pot sizes from a list of strings and return full hierarchy data",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -63,7 +63,7 @@
         },
         "responses": {
           "200": {
-            "description": "Match results",
+            "description": "Match results with resolved hierarchy data",
             "content": {
               "application/json": {
                 "schema": {
@@ -71,138 +71,12 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/plants": {
-      "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
-                  }
-                }
-              }
-            }
           },
-          "400": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
+          "401": {
+            "description": "Unauthorized - API Key missing"
           },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
-      "post": {
-        "description": "Information about a new plant added to the store",
-        "requestBody": {
-          "description": "Plant added to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+          "403": {
+            "description": "Forbidden - Invalid API Key"
           }
         }
       }
@@ -220,7 +94,8 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "example": ["140mm", "20cm pot", "P14"]
           }
         }
       },
@@ -233,76 +108,39 @@
               "type": "object",
               "properties": {
                 "original": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "140mm"
                 },
                 "hierarchy_id": {
-                  "type": "string"
+                  "type": "string",
+                  "example": "140"
+                },
+                "resolved": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "The full object from Growth Equivalent Hierarchy.json",
+                  "example": {
+                    "id": "140",
+                    "name": "140mm",
+                    "volume": 1.4
+                  }
                 },
                 "note": {
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true,
+                  "example": "Exact match found"
                 }
               }
             }
           }
         }
-      },
-      "Plant": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
-          },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
-              }
-            }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
       }
     },
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
       }
     }
   }
