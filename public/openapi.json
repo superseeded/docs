@@ -150,6 +150,18 @@
             "description": "The confidence level of the semantic match.",
             "example": "High"
           },
+          "external_ids": {
+            "type": "object",
+            "nullable": true,
+            "description": "A map of foreign key IDs from external systems.",
+            "properties": {
+              "evergreenconnect_potsize_id": {
+                "type": "integer",
+                "description": "The precise Evergreen Connect ID if an exact match is found.",
+                "example": 823
+              }
+            }
+          },
           "standard_data": {
             "$ref": "#/components/schemas/ContainerProfile"
           }
