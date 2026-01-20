@@ -1,24 +1,61 @@
 ---
 title: 'Introduction'
-description: 'API reference for SuperSeeded'
+description: 'Developer API reference for the SuperSeeded Harmonization Engine'
 ---
 
-## Welcome
+## Welcome to the SuperSeeded API
 
-This documentation provides details on how to interact with the SuperSeeded API.
+The SuperSeeded API provides programmatic access to our **Spec Harmonization Engine**, allowing you to integrate intelligent plant specification parsing and matching directly into your applications.
+
+Whether you are building a marketplace, an inventory system, or a design tool, this API enables you to convert messy, unstructured nursery data into standardized, biological concepts.
 
 <Card
-  title="SuperSeeded Endpoints"
-  icon="leaf"
-  href="/api-reference/openapi.json"
+  title="OpenAPI Specification"
+  icon="file-code"
+  href="/public/openapi.json"
 >
-  View the OpenAPI specification file
+  Download the full OpenAPI 3.1.0 specification file
 </Card>
 
 ## Authentication
 
-All API endpoints (except the health check) require an API key passed in the `X-API-Key` header.
+The SuperSeeded API uses API keys to authenticate requests. You can view and manage your API keys in the [SuperSeeded Dashboard](https://superseeded.ai/settings/api-keys).
+
+### Obtaining an API Key
+
+1.  Log in to your account at **[superseeded.ai](https://superseeded.ai)**.
+2.  Navigate to **Settings > API Keys**.
+3.  Click **Create API Key**.
+4.  Configure your key settings:
+    * **Name:** Give it a descriptive name (e.g., "Production Backend", "Dev Environment").
+    * **Credit Limit (Optional):** Set a maximum usage limit (leave blank for unlimited).
+    * **Reset Frequency:** Choose how often the limit resets (e.g., Monthly, Never).
+    * **Expiration:** Set an expiry date if required.
+5.  Copy the generated key immediately. You will not be able to see it again.
+
+### Using your API Key
+
+Your API key must be included in the header of every request (excluding the health check endpoint).
 
 ```bash
-'X-API-Key': 'YOUR_API_KEY'
+X-API-Key: YOUR_API_KEY
+
+```
+
+**Example Request:**
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-ss-v1*****************************************" \
+  -d '{
+    "items": ["400mm AS", "20L Bag"]
+  }'
+
+```
+
+<Warning>
+**Security Notice:** Your API keys carry many privileges, so be sure to keep them secure! Do not share your secret API keys in publicly accessible areas such as GitHub, client-side code, and so forth.
+</Warning>
+
 ```

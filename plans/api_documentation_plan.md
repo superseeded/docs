@@ -4,7 +4,7 @@ I will document the new API endpoints by updating the OpenAPI specification and 
 
 ## Proposed Changes
 
-### 1. Update `api-reference/openapi.json`
+### 1. Update `public/openapi.json`
 Add the new endpoints to the `paths` section and define necessary schemas in `components/schemas`.
 
 - **`GET /`**: API status endpoint.
@@ -50,7 +50,7 @@ Add the new pages to the navigation under the "Endpoint examples" group (or a ne
 
 ## Implementation Steps
 
-1.  **Modify `api-reference/openapi.json`**: Add `/` and `/match` paths and schemas.
+1.  **Modify `public/openapi.json`**: Add `/` and `/match` paths and schemas.
 2.  **Create `api-reference/endpoint/root.mdx`**: Basic MDX with `openapi` property.
 3.  **Create `api-reference/endpoint/match.mdx`**: Basic MDX with `openapi` property.
 4.  **Modify `docs.json`**: Update navigation to include the new files.
