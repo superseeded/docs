@@ -10,6 +10,11 @@
   "background": {
     "decoration": "gradient"
   },
+  "styling": {
+    "codeblocks": {
+      "theme": "github-dark"
+    }
+  },
   "favicon": "/favicon.png",
   "openapi": "public/openapi.json",
   "navigation": {

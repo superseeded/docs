@@ -20,9 +20,9 @@ Choose your integration path:
 
 ### Get Upload Token
 
-**JavaScript (Node.js):**
+<CodeGroup>
 
-```javascript
+```javascript get-upload-token.js
 async function getUploadToken(merchantId, platformApiKey) {
   const response = await fetch('https://api.superseeded.ai/v1/auth/delegate-upload', {
     method: 'POST',
@@ -42,9 +42,7 @@ async function getUploadToken(merchantId, platformApiKey) {
 }
 ```
 
-**Python:**
-
-```python
+```python get-upload-token.py
 import requests
 
 def get_upload_token(merchant_id: str, platform_api_key: str) -> str:
@@ -60,11 +58,13 @@ def get_upload_token(merchant_id: str, platform_api_key: str) -> str:
     return response.json()['token']
 ```
 
+</CodeGroup>
+
 ### Handle Webhook
 
-**JavaScript:**
+<CodeGroup>
 
-```javascript
+```javascript webhook-handler.js
 async function handleSuperSeedWebhook(payload) {
   const { success, usage, enriched_data } = payload;
   
@@ -81,9 +81,7 @@ async function handleSuperSeedWebhook(payload) {
 }
 ```
 
-**Python:**
-
-```python
+```python webhook-handler.py
 async def handle_superseed_webhook(data):
     if not data.get('success'):
         print("Upload failed")
@@ -99,6 +97,8 @@ async def handle_superseed_webhook(data):
     await save_enriched_data(enriched_data)
 ```
 
+</CodeGroup>
+
 ## Frontend Examples
 
 ### Upload with Uppy (Framework-Agnostic)
@@ -111,12 +111,12 @@ function createUppyUploader(uploadToken, onUploadComplete) {
   const uppy = new Uppy({
     autoProceed: true,
     restrictions: {
-      allowedFileTypes: ['.csv', '.xlsx', '.xls']
+      allowedFileTypes: ['.csv', '.xlsx', '.xls', '.json']
     }
   });
   
   uppy.use(Tus, {
-    endpoint: 'https://secure.superseeded.ai/',
+    endpoint: 'https://secure.superseeded.ai/files/',
     headers: {
       'Authorization': `Bearer ${uploadToken}`
     },
@@ -147,7 +147,7 @@ async function completeUploadFlow(merchantId, file) {
   // 2. Upload file with Uppy
   const uppy = new Uppy({ autoProceed: true })
     .use(Tus, {
-      endpoint: 'https://secure.superseeded.ai/',
+      endpoint: 'https://secure.superseeded.ai/files/',
       headers: { 'Authorization': `Bearer ${token}` }
     });
   
@@ -161,7 +161,7 @@ async function completeUploadFlow(merchantId, file) {
 
 ## All Examples
 
-For the complete set of examples, see the [examples repository](https://github.com/superseed/examples).
+For the complete set of examples, see the [examples repository](https://github.com/superseeded/platform-example).
 
 <Accordion>
   <AccordionItem title="Backend Examples">
