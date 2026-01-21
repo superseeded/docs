@@ -58,7 +58,8 @@
               "platform-integration/overview",
               "platform-integration/upload-delegation",
               "platform-integration/usage-billing",
-              "platform-integration/tus-webhook"
+              "platform-integration/tus-webhook",
+              "platform-integration/examples"
             ]
           }
         ]
