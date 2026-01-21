@@ -1,0 +1,263 @@
+---
+title: "Embed Script"
+description: "Add a drop-in upload widget to your platform with a single script tag"
+---
+
+## Overview
+
+The SuperSeeded Embed Script provides a complete, ready-to-use upload widget that you can add to your platform with minimal code. It handles the entire upload flow including the UI, TUS resumable uploads, and event callbacks.
+
+<CardGroup cols={2}>
+  <Card title="Drop-in Integration" icon="code">
+    Single script tag with zero build dependencies
+  </Card>
+  <Card title="Resumable Uploads" icon="rotate">
+    Built-in TUS support for reliable large file uploads
+  </Card>
+  <Card title="Customizable" icon="palette">
+    Theming, headless mode, and CSS variables
+  </Card>
+  <Card title="Event-Driven" icon="webhook">
+    Lifecycle callbacks for complete control
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Add the script to your page and initialize the widget:
+
+```html
+<script src="https://cdn.superseeded.ai/embed.min.js"></script>
+<div id="superseeded-upload"></div>
+<script>
+  SuperSeed.init({
+    container: '#superseeded-upload',
+    tokenEndpoint: '/api/get-upload-token',
+    onComplete: (result) => {
+      console.log('Upload complete:', result);
+    }
+  });
+</script>
+```
+
+<Note>
+Your backend must implement the token endpoint to call our [delegate-upload API](/platform-integration/upload-delegation). The widget fetches a fresh token before each upload.
+</Note>
+
+## Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `container` | string | Required | CSS selector for the widget container |
+| `tokenEndpoint` | string | Required | Your backend endpoint that returns `{ token: "..." }` |
+| `allowedFileTypes` | string[] | `['.csv', '.xlsx', '.xls']` | Accepted file extensions |
+| `maxFileSize` | number | `104857600` | Maximum file size in bytes (default: 100MB) |
+| `theme` | string | `'light'` | `'light'` or `'dark'` |
+| `headless` | boolean | `false` | Disable built-in UI for custom implementations |
+| `autoProceed` | boolean | `true` | Start upload immediately after file selection |
+| `chunkSize` | number | `5242880` | TUS chunk size in bytes (default: 5MB) |
+| `retryDelays` | number[] | `[0, 1000, 3000, 5000]` | Retry timing after upload failures |
+
+## Events
+
+Subscribe to upload lifecycle events through callback options:
+
+```javascript
+SuperSeed.init({
+  container: '#superseeded-upload',
+  tokenEndpoint: '/api/get-upload-token',
+  
+  onFileAdded: (file) => {
+    console.log('File selected:', file.name);
+  },
+  
+  onProgress: (progress) => {
+    console.log(`Upload progress: ${progress.percentage}%`);
+  },
+  
+  onComplete: (result) => {
+    console.log('Upload complete:', result.uploadId);
+    // Webhook will deliver enriched data to your backend
+  },
+  
+  onError: (error) => {
+    console.error('Upload failed:', error.message);
+  }
+});
+```
+
+### Event Reference
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `onFileAdded` | `{ name, size, type }` | File selected by user |
+| `onProgress` | `{ percentage, bytesUploaded, bytesTotal }` | Upload progress updates |
+| `onComplete` | `{ uploadId, fileName }` | Upload finished successfully |
+| `onError` | `{ message, code }` | Upload failed |
+| `onRetry` | `{ attempt, maxAttempts }` | Retry attempt started |
+
+## Headless Mode
+
+For complete UI control, enable headless mode and build your own interface:
+
+```html
+<script src="https://cdn.superseeded.ai/embed.min.js"></script>
+<input type="file" id="file-input" accept=".csv,.xlsx,.xls" />
+<div id="progress"></div>
+
+<script>
+  const uploader = SuperSeed.init({
+    container: '#superseeded-upload',
+    tokenEndpoint: '/api/get-upload-token',
+    headless: true,
+    
+    onProgress: ({ percentage }) => {
+      document.getElementById('progress').textContent = `${percentage}%`;
+    },
+    
+    onComplete: (result) => {
+      document.getElementById('progress').textContent = 'Complete!';
+    }
+  });
+
+  document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      uploader.upload(file);
+    }
+  });
+</script>
+```
+
+### Headless API
+
+| Method | Description |
+|--------|-------------|
+| `uploader.upload(file)` | Start upload for a File object |
+| `uploader.pause()` | Pause the current upload |
+| `uploader.resume()` | Resume a paused upload |
+| `uploader.cancel()` | Cancel and reset the upload |
+
+## Theming
+
+### Built-in Themes
+
+```javascript
+SuperSeed.init({
+  container: '#superseeded-upload',
+  tokenEndpoint: '/api/get-upload-token',
+  theme: 'dark' // or 'light'
+});
+```
+
+### CSS Variables
+
+Override the default styling with CSS custom properties:
+
+```css
+#superseeded-upload {
+  --superseeded-primary: #F69AC0;
+  --superseeded-primary-hover: #F881AE;
+  --superseeded-background: #ffffff;
+  --superseeded-surface: #f5f5f5;
+  --superseeded-text: #1a1a1a;
+  --superseeded-text-muted: #666666;
+  --superseeded-border: #e0e0e0;
+  --superseeded-border-radius: 8px;
+  --superseeded-font-family: system-ui, sans-serif;
+}
+```
+
+### Dark Theme Variables
+
+```css
+#superseeded-upload {
+  --superseeded-background: #1a1a1a;
+  --superseeded-surface: #2a2a2a;
+  --superseeded-text: #ffffff;
+  --superseeded-text-muted: #999999;
+  --superseeded-border: #3a3a3a;
+}
+```
+
+## Backend Setup
+
+The embed script requires your backend to provide an upload token endpoint. This endpoint calls the SuperSeeded [delegate-upload API](/platform-integration/upload-delegation) and returns the token to the frontend.
+
+### Example Token Endpoint
+
+```javascript
+// Express.js example
+app.post('/api/get-upload-token', async (req, res) => {
+  const { merchant_id } = req.body;
+  
+  const response = await fetch('https://api.superseeded.ai/v1/auth/delegate-upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPERSEED_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ merchant_id })
+  });
+  
+  const data = await response.json();
+  res.json({ token: data.token });
+});
+```
+
+<Warning>
+Never expose your Platform API key to the frontend. The token endpoint must be a server-side route that securely calls our API.
+</Warning>
+
+## Versioning
+
+For production stability, pin to a specific version:
+
+```html
+<!-- Latest (auto-updates) -->
+<script src="https://cdn.superseeded.ai/embed.min.js"></script>
+
+<!-- Version-pinned -->
+<script src="https://cdn.superseeded.ai/v1/embed.min.js"></script>
+```
+
+## Complete Example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Documents</title>
+  <style>
+    #superseeded-upload {
+      --superseeded-primary: #4f46e5;
+      max-width: 500px;
+      margin: 2rem auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upload Your Price List</h1>
+  <div id="superseeded-upload"></div>
+  
+  <script src="https://cdn.superseeded.ai/embed.min.js"></script>
+  <script>
+    SuperSeed.init({
+      container: '#superseeded-upload',
+      tokenEndpoint: '/api/get-upload-token',
+      theme: 'light',
+      allowedFileTypes: ['.csv', '.xlsx'],
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+      
+      onComplete: (result) => {
+        alert('Upload complete! We will process your file shortly.');
+      },
+      
+      onError: (error) => {
+        alert('Upload failed: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
+```
