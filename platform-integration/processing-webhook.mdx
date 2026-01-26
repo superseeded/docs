@@ -5,14 +5,14 @@ description: "Webhook endpoint for post-upload file processing"
 
 ## Internal Webhook
 
-**Endpoint:** `POST /v1/internal/tus-hook`
+**Endpoint:** `POST /v1/internal/upload-hook`
 
 This endpoint is called internally after a file is parsed. It's documented 
 here for transparency about the processing flow.
 
 ## Flow
 
-1. File uploaded via Tus server.
+1. File uploaded via upload service.
 2. Parser extracts structured JSON.
 3. Webhook receives extracted data.
 4. Usage event is recorded.

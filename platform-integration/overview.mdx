@@ -1,42 +1,87 @@
 ---
 title: "Overview"
-description: "Enrich your platform with AI powered by SuperSeeded"
+description: "Integrate SuperSeeded AI processing into your platform"
 ---
 
-## What is the Platform Integration?
+## What is a platform?
 
-The SuperSeeded Platform API is designed for **Inventory Management Systems** and **Plant Marketplaces**. It allows you to embed a "Drag-and-Drop" digitization tool directly into your own dashboard.
-
-Instead of forcing your suppliers to manually type orders from PDF quotes into your system, they can simply drag a file onto your interface. Our AI engine parses the messy document and returns enriched data ready for your platform.
+A **Platform** is a third-party integrator that wholesales the SuperSeeded AI API to their own merchants. Platforms act as intermediaries, providing their merchants with plant schedule processing capabilities without those merchants needing direct API access.
 
 <CardGroup cols={2}>
-  <Card title="Zero-Friction Ingestion" icon="magnet">
-    Suppliers can digitize a 500-line PDF quote in seconds, removing the biggest barrier to using your platform.
+  <Card title="Document processing" icon="bolt">
+    Suppliers can digitize a 500-line PDF quote in seconds.
   </Card>
-  <Card title="White-Label Ready" icon="paint-brush">
+  <Card title="White-label ready" icon="browser">
     The upload experience lives entirely on your domain. Your users never leave your dashboard.
   </Card>
 </CardGroup>
 
-## How it Works (The "Handshake")
+<Info>
+  Platforms are billed based on their merchants' usage, with a per-active-merchant model plus row-based overage charges.
+</Info>
 
-To ensure security and accurate billing, we use a **Delegated Upload** model. This keeps your server lightweight—you don't handle the heavy file uploads; you just authorize them.
+## Integration architecture
 
+```mermaid
+sequenceDiagram
+    participant M as Merchant Frontend
+    participant P as Platform Backend
+    participant S as SuperSeeded API
+    participant U as Upload Service 
+    
+    M->>P: Initiate upload
+    P->>S: POST /v1/auth/delegate-upload
+    S-->>P: JWT token
+    P-->>M: Pass token to frontend
+    M->>U: Upload file with JWT
+    U->>S: POST /v1/internal/upload-hook
+    S-->>P: Webhook with enriched data
+    P-->>M: Display results
+```
 
+## How it works
 
 <Steps>
-  <Step title="The Handshake">
-    Your backend calls our API to say: *"I have a user (Nursery A) who wants to upload a file."* We give you a secure, temporary **Upload Token**.
+  <Step title="Delegate token">
+    Your backend requests a short-lived JWT token for a specific merchant using the [Upload Delegation](/platform-integration/upload-delegation) endpoint.
   </Step>
-  <Step title="The Handoff">
-    Your frontend uses this token to upload the document directly to our secure processing cloud.
+  <Step title="Secure upload">
+    Your frontend uses this token to authenticate direct uploads to our upload service.
   </Step>
-  <Step title="The Result">
-    We process the file using AI, structure the data, and send a webhook back to your server with the clean order details.
+  <Step title="Processing">
+    Our backend parses the file and records usage.
+  </Step>
+  <Step title="Webhook response">
+    Your platform receives the processed data via webhook, ready for your merchants.
   </Step>
 </Steps>
 
-## Why integrate?
+## Key concepts
 
-* **Stickiness:** Customers who upload their documents into your platform are less likely to leave.
-* **Revenue Share:** Our usage-based billing model allows you to resell this functionality to your users at a margin.
+### Merchants
+
+Merchants are your end customers. Each merchant is identified by a `merchant_id` that you provide. This ID is used to:
+
+- Track usage and bill based on active merchants
+- Partition data and quotas
+
+### Billable vs non-billable
+
+Not all document processing counts toward billing. See [Usage & Billing](/platform-integration/usage-billing) for details on:
+
+- Active merchant billing model and row counting
+- Quotas and the SuperSeeded Engine exemption
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Upload delegation" icon="key" href="/platform-integration/upload-delegation">
+    Generate secure tokens for merchant uploads
+  </Card>
+  <Card title="Usage & billing" icon="receipt" href="/platform-integration/usage-billing">
+    Understand how usage is tracked and billed
+  </Card>
+  <Card title="Processing webhook" icon="webhook" href="/platform-integration/processing-webhook">
+    Learn about post-processing data flow
+  </Card>
+</CardGroup>

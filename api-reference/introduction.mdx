@@ -1,13 +1,13 @@
 ---
 title: 'Introduction'
-description: 'Developer API reference for the SuperSeeded Harmonization Engine'
+description: 'API reference for the SuperSeeded Harmonization Engine'
 ---
 
 ## Welcome to the SuperSeeded API
 
-The SuperSeeded API provides programmatic access to our **Spec Harmonization Engine**, allowing you to integrate intelligent plant specification parsing and matching directly into your applications.
+The SuperSeeded API provides programmatic access to the **Spec Harmonization Engine**. This allows you to integrate plant specification parsing and matching into your applications.
 
-Whether you are building a marketplace, an inventory system, or a design tool, this API enables you to convert messy, unstructured nursery data into standardized, biological concepts.
+This API converts unstructured nursery data into standardized biological concepts.
 
 <Card
   title="OpenAPI Specification"
@@ -15,35 +15,34 @@ Whether you are building a marketplace, an inventory system, or a design tool, t
   href="https://raw.githubusercontent.com/superseeded/docs/refs/heads/main/public/openapi.json"
   target="_blank"
 >
-  Download the full OpenAPI 3.1.0 specification file
+  Download the OpenAPI 3.1.0 specification file
 </Card>
 
 ## Authentication
 
-The SuperSeeded API uses API keys to authenticate requests. You can view and manage your API keys in the [SuperSeeded Dashboard](https://superseeded.ai/settings/api-keys).
+The SuperSeeded API uses API keys to authenticate requests. You can manage your API keys in the [SuperSeeded Dashboard](https://superseeded.ai/settings/api-keys).
 
-### Obtaining an API Key
+### Obtaining an API key
 
-1.  Log in to your account at **[superseeded.ai](https://superseeded.ai)**.
-2.  Navigate to **Settings > API Keys**.
-3.  Click **Create API Key**.
+1.  Log in to your account at [superseeded.ai](https://superseeded.ai).
+2.  Navigate to Settings > API Keys.
+3.  Click Create API Key.
 4.  Configure your key settings:
-    * **Name:** Give it a descriptive name (e.g., "Production Backend", "Dev Environment").
-    * **Credit Limit (Optional):** Set a maximum usage limit (leave blank for unlimited).
-    * **Reset Frequency:** Choose how often the limit resets (e.g., Monthly, Never).
-    * **Expiration:** Set an expiry date if required.
+    * Name: Give it a descriptive name (e.g., "Production Backend", "Dev Environment").
+    * Credit limit (optional): Set a maximum usage limit (leave blank for unlimited).
+    * Reset frequency: Choose how often the limit resets (e.g., Monthly, Never).
+    * Expiration: Set an expiry date if required.
 5.  Copy the generated key immediately. You will not be able to see it again.
 
-### Using your API Key
+### Using your API key
 
 Your API key must be included in the header of every request (excluding the health check endpoint).
 
 ```bash
 X-API-Key: YOUR_API_KEY
-
 ```
 
-**Example Request:**
+**Example request:**
 
 ```bash
 curl -X POST https://api.superseeded.ai/v1/resolve/specs \
@@ -52,11 +51,9 @@ curl -X POST https://api.superseeded.ai/v1/resolve/specs \
   -d '{
     "items": ["400mm AS", "20L Bag"]
   }'
-
 ```
 
 <Warning>
-**Security Notice:** Your API keys carry many privileges, so be sure to keep them secure! Do not share your secret API keys in publicly accessible areas such as GitHub, client-side code, and so forth.
+**Security notice:** Your API keys carry many privileges. Do not share your secret API keys in publicly accessible areas such as GitHub or client-side code.
 </Warning>
-
 ```

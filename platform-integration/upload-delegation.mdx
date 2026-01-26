@@ -6,7 +6,7 @@ description: "Generate secure tokens for merchant file uploads"
 ## Overview
 
 The delegate-upload endpoint allows your Platform to generate secure, 
-short-lived JWT tokens for your merchants' frontend upload widgets (Uppy).
+short-lived JWT tokens for your merchants' frontend upload widgets.
 
 ## Endpoint
 
@@ -35,6 +35,6 @@ This endpoint requires your Platform API key in the `Authorization` header as a 
 
 1. Merchant initiates upload in your frontend.
 2. Your backend calls `delegate-upload` with the merchant's ID.
-3. Pass the JWT token to your frontend Uppy widget.
-4. Uppy uses this token to authenticate direct uploads to our Tus server.
+3. Pass the JWT token to your frontend.
+4. Your frontend uses this token to authenticate direct uploads to our upload service.
 5. After processing, we call your webhook with the result.

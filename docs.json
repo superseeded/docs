@@ -2,6 +2,10 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "SuperSeeded",
+  "info": {
+    "title": "SuperSeeded API Documentation",
+    "description": "Modern nursery industry API for reconciling plant specifications, resolving equivalence and assessing logistical risks for plant stock."
+  },
   "colors": {
     "primary": "#F69AC0",
     "light": "#FFB9C9",

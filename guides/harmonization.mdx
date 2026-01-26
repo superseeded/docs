@@ -1,64 +1,64 @@
 ---
-title: "Spec Harmonization"
-description: "The core of the SuperSeeded platform"
+title: "Spec harmonization"
+description: "Resolve raw text labels into structured biological concepts"
 ---
 
-The **Harmonization Engine** is the core of the SuperSeeded platform. It uses a "Growth Equivalent" logic to resolve raw text labels into structured biological concepts.
+The **Harmonization Engine** uses a "Growth Equivalent" logic to resolve raw text labels into structured biological concepts.
 
-## The Problem
+## The problem
 
-Legacy systems rely on exact string matching. This breaks the supply chain because:
+Legacy systems rely on exact string matching. This affects the supply chain because:
 
-* **Units differ:** Litres (Volume) vs. Millimeters (Diameter).
-* **Formats differ:** "Pot", "Bag", "Tubestock", "Planter Bag".
-* **Abbreviations are rampant:** "AS" (Air Slot), "RP" (Root Pruning), "XG" (Ex-Ground).
+* Units differ: Litres (Volume) vs. Millimeters (Diameter).
+* Formats differ: "Pot", "Bag", "Tubestock", "Planter Bag".
+* Abbreviations are common: "AS" (Air Slot), "RP" (Root Pruning), "XG" (Ex-Ground).
 
-## The Solution: Growth Equivalents
+## The solution: Growth equivalents
 
-When you send a list of strings to `/resolve/specs`, our engine maps them to a **Stage of Maturity** (0-5). This allows you to programmatically determine if two items are swappable.
+When you send a list of strings to `/resolve/specs`, the engine maps them to a stage of maturity (0-5). This allows you to determine if two items are swappable.
 
-### The Maturity Hierarchy
+### The maturity hierarchy
 
-| Stage | Name | Examples | Substitution Logic |
+| Stage | Name | Examples | Substitution logic |
 | --- | --- | --- | --- |
-| **0** | **Genetic** | Seeds, Tissue Culture | Not a plant yet. |
-| **1** | **Propagation** | Jiffy, Plugs, Cuttings | Production inputs. High transplant risk. |
-| **2** | **Liners** | Tubes, Cell Trays, Punnets | Stackable freight. "Potting up" stock. |
-| **3** | **Retail** | 140mm - 300mm Pots | Standard rigid containers. Pallet freight. |
-| **4** | **Advanced** | 45L Bags, Air Pots | Landscape construction stock. |
-| **5** | **Mature** | Ex-Ground, 100L+ | Heavy machinery required. |
+| 0 | Genetic | Seeds, Tissue Culture | Not a plant yet. |
+| 1 | Propagation | Jiffy, Plugs, Cuttings | Production inputs. High transplant risk. |
+| 2 | Liners | Tubes, Cell Trays, Punnets | Stackable freight. "Potting up" stock. |
+| 3 | Retail | 140mm - 300mm Pots | Standard rigid containers. Pallet freight. |
+| 4 | Advanced | 45L Bags, Air Pots | Landscape construction stock. |
+| 5 | Mature | Ex-Ground, 100L+ | Heavy machinery required. |
 
-## Data Enrichment
+## Data metadata
 
-Beyond simple categorization, the API returns critical metadata for logistics and risk management.
+The API returns metadata for logistics and risk management.
 
-### 1. Logistical Intelligence
+### 1. Logistical data
 
-We explicitly flag freight constraints.
+The API flags freight constraints.
 
-> **Scenario:** A `"Standard Tube"` is flagged as `is_stackable: true`. A `"200mm Pot"` is `is_stackable: false`.
-> **Value:** Your application can automatically calculate that shipping 1,000 tubes is cheap (one pallet space), while shipping 1,000 pots is expensive (multiple pallets).
+> **Scenario:** A "Standard Tube" is flagged as `is_stackable: true`. A "200mm Pot" is `is_stackable: false`.
+> **Value:** Applications can calculate that shipping 1,000 tubes is less expensive than shipping 1,000 pots.
 
-### 2. Quality & Risk Profiles
+### 2. Quality and risk profiles
 
-We tell you what to look for.
+The API provides information on handling and perishability.
 
-> **Scenario:** You resolve a `"Bare Root"` tree.
+> **Scenario:** You resolve a "Bare Root" tree.
 > **Response:** The API returns `transplant_shock_risk: "High"` and `seasonal_restriction: "Winter Only"`.
-> **Value:** You can display a warning in your UI: *"Warning: This item is highly perishable and only available in Winter."*
+> **Value:** You can display a warning in your UI: "Warning: This item is perishable and only available in Winter."
 
-## Example Request
+## Example request
 
 ```javascript
 const response = await client.post('/resolve/specs', {
   items: [
-    "400mm AS",       // Messy abbreviation
-    "20L Planter Bag" // Specific format
+    "400mm AS",
+    "20L Planter Bag"
   ]
 });
 ```
 
-## Example Response
+## Example response
 
 ```json
 {
