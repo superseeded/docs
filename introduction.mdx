@@ -1,17 +1,20 @@
 ---
-title: "Welcome to SuperSeeded"
+title: "Welcome to SuperSeeded API"
 description: "API for planting and procurement"
 ---
 
 Nursery inventory data is inconsistent. One grower sells a `"400mm AS"`, another lists a `"45L Air Pot"`, and a landscape architect specifies a `"Rocket Pot"`. To a computer, these are three different products. To a horticulturist, they are the same biological asset.
 
-We provide an API that aligns unstructured nursery stock labels into standardized, structured profiles. This engine allows you to match supply and demand based on biological reality rather than text strings.
+The SuperSeeded API matches supply and demand based on biological reality rather than text strings. It includes components for spec alignment and platform integration.
 
-## Core Capabilities
+## Capabilities
 
-<CardGroup cols={1}>
+<CardGroup cols={2}>
 <Card title="Spec Alignment" icon="wand-magic-sparkles" href="/guides/alignment">
-Resolve inputs like "200mm pot" or "P14" into standardized Growth Equivalent stages. We provide logistical data and quality profiles for each item.
+Resolve inputs like "200mm pot" or "P14" into standardized Growth Equivalent stages. Returns logistical data and quality profiles for each item.
+</Card>
+<Card title="Platform Integration" icon="puzzle" href="/platform-integration/overview">
+Embed document processing into your own platform. White-label ready with delegated uploads, usage tracking, and merchant management.
 </Card>
 </CardGroup>
 
@@ -20,3 +23,4 @@ Resolve inputs like "200mm pot" or "P14" into standardized Growth Equivalent sta
 * **For Marketplaces:** Enable matching so a buyer searching for a **20L Pot** can find valid substitutes like a **20L Bag**.
 * **For Inventory Systems:** Clean up data imported from disparate supplier spreadsheets.
 * **For Logistics:** Calculate freight estimates by identifying which items are stackable tubes or palletized 300mm pots.
+* **For Platforms:** Offer AI-powered document processing to your merchants without building it yourself.

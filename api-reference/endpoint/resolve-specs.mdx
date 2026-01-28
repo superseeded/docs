@@ -18,12 +18,55 @@ The request body should be a JSON object with an `items` field containing an arr
   "results": [
     {
       "input_label": "400mm AS",
-      "match_confidence": "High",
-      "external_ids": {
-        "evergreenconnect_potsize_id": 823
-      },
+      "match_confidence": "Medium",
       "standard_data": {
-        "type": "Pot - Air Pruning",
+        "id": "3.2",
+        "evergreen_connect_potsize_id": [
+          606,
+          693,
+          707,
+          838,
+          753,
+          775,
+          509,
+          832,
+          556,
+          533,
+          755,
+          541,
+          560,
+          786,
+          780,
+          656
+        ],
+        "type": "Pot - Square",
+        "stage_order": 3,
+        "stage_name": "Retail & Small Production",
+        "is_biological": true,
+        "matching_strategy": "Volume/Width",
+        "logistics": {
+          "tier": "Pallet",
+          "is_stackable": false,
+          "freight_efficiency": "Medium-High"
+        },
+        "quality_profile": {
+          "transplant_shock_risk": "Low",
+          "seasonal_restriction": "None",
+          "inspection_focus": "Root Circling"
+        },
+        "customer_note": "More volume efficient than round pots; fits tighter on pallets."
+      },
+      "external_ids": null
+    },
+    {
+      "input_label": "20L Planter Bag",
+      "match_confidence": "High",
+      "standard_data": {
+        "id": "4.2",
+        "evergreen_connect_potsize_id": [
+          730
+        ],
+        "type": "Planter Bag",
         "stage_order": 4,
         "stage_name": "Advanced Production",
         "is_biological": true,
@@ -31,15 +74,16 @@ The request body should be a JSON object with an `items` field containing an arr
         "logistics": {
           "tier": "Pallet",
           "is_stackable": false,
-          "freight_efficiency": "Medium"
+          "freight_efficiency": "High"
         },
         "quality_profile": {
-          "transplant_shock_risk": "Very Low",
+          "transplant_shock_risk": "Low",
           "seasonal_restriction": "None",
-          "inspection_focus": "Desiccation"
+          "inspection_focus": "Weeds/Slugs"
         },
-        "customer_note": "Superior root structure; requires more frequent watering until planted."
-      }
+        "customer_note": "Cheaper equivalent to pots; bags can be squashed during transit."
+      },
+      "external_ids": null
     }
   ]
 }

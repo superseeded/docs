@@ -107,20 +107,89 @@ The webhook returns enriched data with usage information:
       "billable_row_count": 100
     }
   },
-  "enriched_data": [
-    {
-      "line_item": {
-        "row_number": 1,
-        "botanical_name": "Acacia cognata",
-        "common_name": "River Wattle",
-        "pot_size": "200mm",
-        "quantity": 50
-      },
-      "stock_status": "IN_STOCK",
-      "available_quantity": 120,
-      "matched_supplier": "Green Nursery Co"
-    }
-  ]
+  "enriched_data": {
+    "results": [
+      {
+        "input_label": "400mm AS",
+        "match_confidence": "High",
+        "standard_data": {
+          "id": "4.1",
+          "evergreen_connect_potsize_id": [
+            61,
+            79,
+            81,
+            91,
+            96,
+            103,
+            105,
+            111,
+            114,
+            119,
+            123,
+            125,
+            127,
+            129,
+            133,
+            134,
+            138,
+            149,
+            151,
+            153,
+            155,
+            158,
+            162,
+            166,
+            171,
+            179,
+            185,
+            189,
+            193,
+            200,
+            206,
+            351,
+            370,
+            407,
+            408,
+            409,
+            410,
+            411,
+            434,
+            452,
+            470,
+            471,
+            530,
+            531,
+            587,
+            606,
+            634,
+            644,
+            721,
+            727,
+            748,
+            781,
+            796
+          ],
+          "type": "Pot - Air Pruning",
+          "stage_order": 4,
+          "stage_name": "Advanced Production",
+          "is_biological": true,
+          "matching_strategy": "Volume",
+          "logistics": {
+            "tier": "Pallet",
+            "is_stackable": false,
+            "freight_efficiency": "Medium"
+          },
+          "quality_profile": {
+            "transplant_shock_risk": "Very Low",
+            "seasonal_restriction": "None",
+            "inspection_focus": "Desiccation"
+          },
+          "customer_note": "Superior root structure; requires more frequent watering until planted."
+        },
+        "external_ids": null
+      }
+    ]
+  }
 }
 ```
 
@@ -150,35 +219,70 @@ The webhook returns enriched data with usage information:
   Cumulative usage for the current billing month
 </ResponseField>
 
-<ResponseField name="enriched_data" type="array" required>
-  Array of enriched line items with stock information
+<ResponseField name="enriched_data" type="object" required>
+  Spec resolution results containing aligned plant specifications
 </ResponseField>
 
-### Stock Status Values
-
-| Status | Description |
-|--------|-------------|
-| `IN_STOCK` | Item available from matched supplier |
-| `LOW_STOCK` | Limited availability (< 20% of requested quantity) |
-| `OUT_OF_STOCK` | Item not currently available |
-| `NOT_FOUND` | No matching item in stock database |
-
-### Enriched Line Item Fields
-
-<ResponseField name="line_item" type="object">
-  Original parsed line item data
+<ResponseField name="enriched_data.results" type="array" required>
+  Array of resolved spec objects with standard data
 </ResponseField>
 
-<ResponseField name="stock_status" type="string">
-  Current availability status
+### Spec Resolution Result Fields
+
+<ResponseField name="input_label" type="string">
+  The original raw text label that was resolved
 </ResponseField>
 
-<ResponseField name="available_quantity" type="integer | null">
-  Number of units available (null if NOT_FOUND)
+<ResponseField name="match_confidence" type="string">
+  Confidence level of the match: `"Exact"`, `"High"`, `"Medium"`, or `"Low"`
 </ResponseField>
 
-<ResponseField name="matched_supplier" type="string | null">
-  Supplier name if matched (null if NOT_FOUND)
+<ResponseField name="standard_data" type="object">
+  Structured biological concept data
+</ResponseField>
+
+<ResponseField name="standard_data.id" type="string">
+  Unique identifier for this specification
+</ResponseField>
+
+<ResponseField name="standard_data.evergreen_connect_potsize_id" type="integer[]">
+  Array of associated EvergreenConnect pot size IDs
+</ResponseField>
+
+<ResponseField name="standard_data.type" type="string">
+  Container type classification
+</ResponseField>
+
+<ResponseField name="standard_data.stage_order" type="integer">
+  Maturity stage number (0-5)
+</ResponseField>
+
+<ResponseField name="standard_data.stage_name" type="string">
+  Human-readable maturity stage name
+</ResponseField>
+
+<ResponseField name="standard_data.is_biological" type="boolean">
+  Whether this represents a biological growth stage
+</ResponseField>
+
+<ResponseField name="standard_data.matching_strategy" type="string">
+  Strategy used for matching: `"Volume"`, `"Volume/Weight"`, `"Volume Critical (Wildcard)"`, etc.
+</ResponseField>
+
+<ResponseField name="standard_data.logistics" type="object">
+  Freight and handling constraints
+</ResponseField>
+
+<ResponseField name="standard_data.quality_profile" type="object">
+  Risk and handling information
+</ResponseField>
+
+<ResponseField name="standard_data.customer_note" type="string">
+  Human-readable guidance for handling
+</ResponseField>
+
+<ResponseField name="external_ids" type="object | null">
+  External system identifiers (currently null)
 </ResponseField>
 
 ## Error Responses
