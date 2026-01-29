@@ -62,13 +62,29 @@
         "tab": "Platform Integration",
         "groups": [
           {
-            "group": "Integration",
+            "group": "Getting Started",
             "pages": [
-              "platform-integration/overview",
+              "platform-integration/overview"
+            ]
+          },
+          {
+            "group": "Frontend Integration",
+            "pages": [
               "platform-integration/embed",
+              "platform-integration/wordpress"
+            ]
+          },
+          {
+            "group": "Backend Integration",
+            "pages": [
               "platform-integration/upload-delegation",
               "platform-integration/usage-billing",
-              "platform-integration/tus-webhook",
+              "platform-integration/tus-webhook"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
               "platform-integration/examples"
             ]
           }

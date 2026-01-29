@@ -1,0 +1,268 @@
+---
+title: "WordPress Plugin"
+description: "Add the SuperSeeded upload widget to your WordPress site"
+---
+
+## Overview
+
+The SuperSeeded Upload plugin provides a seamless way to add file upload capabilities to your WordPress site. It includes both a Gutenberg block and shortcode, making it easy to embed the upload widget anywhere on your site.
+
+<CardGroup cols={2}>
+  <Card title="Shortcode Support" icon="code">
+    Use `[superseeded_upload]` in any post or page
+  </Card>
+  <Card title="Gutenberg Block" icon="cube">
+    Native block editor integration
+  </Card>
+  <Card title="Secure Token Proxy" icon="shield-check">
+    API key never exposed to frontend
+  </Card>
+  <Card title="Customizable" icon="palette">
+    Themes, file types, and size limits
+  </Card>
+</CardGroup>
+
+## Installation
+
+### Manual Installation
+
+1. Download the plugin from the [releases page](https://github.com/superseeded/wordpress-plugin/releases)
+2. Upload to `/wp-content/plugins/superseeded-upload/`
+3. Activate via **Plugins > Installed Plugins**
+
+### File Structure
+
+```
+superseeded-upload/
+├── superseeded-upload.php    # Main plugin file
+├── js/
+│   ├── init.js               # Widget initializer
+│   └── block.js              # Gutenberg block
+└── readme.txt                # Plugin readme
+```
+
+## Configuration
+
+Navigate to **Settings > SuperSeeded Upload** to configure the plugin.
+
+### Required Settings
+
+| Setting | Description |
+|---------|-------------|
+| Platform API Key | Your SuperSeeded API key (from dashboard) |
+| Default Merchant ID | The merchant ID for uploads |
+
+### Optional Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Theme | `light` | Widget theme (`light` or `dark`) |
+| Allowed File Types | `.csv,.xlsx,.xls` | Comma-separated extensions |
+| Max File Size | `104857600` | Maximum size in bytes (100MB) |
+
+<Warning>
+Your API key is stored securely on the server and proxied through WordPress REST API. It is never exposed to the frontend.
+</Warning>
+
+## Usage
+
+### Shortcode
+
+Add the upload widget to any page or post:
+
+```
+[superseeded_upload]
+```
+
+#### Shortcode Attributes
+
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `merchant_id` | Override default merchant ID | `merchant_id="acme-corp"` |
+| `theme` | Override theme | `theme="dark"` |
+| `class` | Additional CSS classes | `class="my-uploader"` |
+
+#### Example with Attributes
+
+```
+[superseeded_upload merchant_id="acme-corp" theme="dark" class="custom-uploader"]
+```
+
+### Gutenberg Block
+
+1. Open the page/post in the block editor
+2. Click the **+** button to add a block
+3. Search for **"SuperSeeded Upload"**
+4. Configure options in the block sidebar
+
+<Frame>
+  <img src="/images/wordpress-block-editor.png" alt="Gutenberg block editor" />
+</Frame>
+
+## JavaScript Events
+
+The widget dispatches custom DOM events that you can listen to for integration with your theme or other plugins:
+
+```javascript
+// Get the upload container
+const container = document.querySelector('.superseeded-upload-container');
+
+// File added
+container.addEventListener('superseeded:file-added', (e) => {
+  console.log('File selected:', e.detail.name);
+});
+
+// Upload progress
+container.addEventListener('superseeded:progress', (e) => {
+  console.log(`Progress: ${e.detail.percentage}%`);
+});
+
+// Upload complete
+container.addEventListener('superseeded:complete', (e) => {
+  console.log('Upload complete:', e.detail.uploadId);
+  // Show success message, redirect, etc.
+});
+
+// Upload error
+container.addEventListener('superseeded:error', (e) => {
+  console.error('Upload failed:', e.detail.message);
+});
+```
+
+### Event Details
+
+| Event | Detail Properties |
+|-------|-------------------|
+| `superseeded:file-added` | `{ name, size, type }` |
+| `superseeded:progress` | `{ percentage, bytesUploaded, bytesTotal }` |
+| `superseeded:complete` | `{ uploadId, fileName }` |
+| `superseeded:error` | `{ message, code }` |
+
+## Styling
+
+### CSS Variables
+
+Override the default styling with CSS custom properties:
+
+```css
+.superseeded-upload-container {
+  --superseeded-primary: #4f46e5;
+  --superseeded-primary-hover: #4338ca;
+  --superseeded-background: #ffffff;
+  --superseeded-surface: #f5f5f5;
+  --superseeded-text: #1a1a1a;
+  --superseeded-text-muted: #666666;
+  --superseeded-border: #e0e0e0;
+  --superseeded-border-radius: 8px;
+}
+```
+
+### Theme-Specific Styles
+
+```css
+/* Style only dark-themed widgets */
+.superseeded-upload-container[data-theme="dark"] {
+  --superseeded-background: #0a0a0a;
+  --superseeded-surface: #1a1a1a;
+}
+```
+
+## Dynamic Content
+
+If you're loading content dynamically (AJAX, page builders), reinitialize widgets after the DOM updates:
+
+```javascript
+// After dynamic content is loaded
+if (window.SuperSeededWordPress) {
+  window.SuperSeededWordPress.init();
+}
+```
+
+## REST API Endpoint
+
+The plugin registers a REST API endpoint for the token proxy:
+
+```
+POST /wp-json/superseeded/v1/token
+```
+
+### Request
+
+```json
+{
+  "merchant_id": "acme-corp"
+}
+```
+
+### Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
+<Note>
+This endpoint requires authentication via WordPress nonce or logged-in user session.
+</Note>
+
+## Troubleshooting
+
+### Widget Not Appearing
+
+1. Check that the plugin is activated
+2. Verify your API key is configured in Settings
+3. Check browser console for JavaScript errors
+
+### Token Fetch Failed
+
+1. Verify your API key is correct
+2. Check that the merchant ID is configured
+3. Review server error logs for API responses
+
+### Uploads Failing
+
+1. Check file size limits in both plugin settings and WordPress/server config
+2. Verify the file type is in the allowed list
+3. Check browser network tab for specific error responses
+
+## Complete Example
+
+Here's a complete example integrating the upload widget with a custom thank-you message:
+
+```html
+<!-- In your page content -->
+[superseeded_upload]
+
+<div id="upload-status" style="display: none; margin-top: 20px;">
+  <p id="status-message"></p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.querySelector('.superseeded-upload-container');
+  const status = document.getElementById('upload-status');
+  const message = document.getElementById('status-message');
+
+  container.addEventListener('superseeded:complete', function(e) {
+    status.style.display = 'block';
+    message.textContent = 'Thank you! Your file has been uploaded successfully.';
+    message.style.color = 'green';
+  });
+
+  container.addEventListener('superseeded:error', function(e) {
+    status.style.display = 'block';
+    message.textContent = 'Upload failed: ' + e.detail.message;
+    message.style.color = 'red';
+  });
+});
+</script>
+```
+
+## Plugin Source
+
+The complete plugin source is available for download:
+
+<Card title="Download Plugin" icon="download" href="https://github.com/superseeded/wordpress-plugin/releases">
+  Get the latest release from GitHub
+</Card>
