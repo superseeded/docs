@@ -60,6 +60,7 @@ Navigate to **Settings > SuperSeeded Upload** to configure the plugin.
 | Theme | `light` | Widget theme (`light` or `dark`) |
 | Allowed File Types | `.csv,.xlsx,.xls` | Comma-separated extensions |
 | Max File Size | `104857600` | Maximum size in bytes (100MB) |
+| Show Debug Info | `false` | Display enrichment results accordion and console logs |
 
 <Warning>
 Your API key is stored securely on the server and proxied through WordPress REST API. It is never exposed to the frontend.
@@ -79,14 +80,17 @@ Add the upload widget to any page or post:
 
 | Attribute | Description | Example |
 |-----------|-------------|---------|
-| `merchant_id` | Override default merchant ID | `merchant_id="acme-corp"` |
 | `theme` | Override theme | `theme="dark"` |
 | `class` | Additional CSS classes | `class="my-uploader"` |
+
+<Note>
+Merchant ID is configured in settings only and cannot be overridden per-shortcode for security reasons.
+</Note>
 
 #### Example with Attributes
 
 ```
-[superseeded_upload merchant_id="acme-corp" theme="dark" class="custom-uploader"]
+[superseeded_upload theme="dark" class="custom-uploader"]
 ```
 
 ### Gutenberg Block
@@ -130,7 +134,13 @@ container.addEventListener('superseeded:complete', (e) => {
 
 // Upload error
 container.addEventListener('superseeded:error', (e) => {
-  console.error('Upload failed:', e.detail.message);
+  console.error('Upload failed:', e.detail.error);
+});
+
+// Specs resolved (JSON files only) - enrichment data ready
+container.addEventListener('superseeded:specs-resolved', (e) => {
+  console.log('Enrichment complete:', e.detail.specsData);
+  // Access enriched items, usage info, etc.
 });
 ```
 
@@ -138,11 +148,12 @@ container.addEventListener('superseeded:error', (e) => {
 
 | Event | Detail Properties |
 |-------|-------------------|
-| `superseeded:file-added` | `{ name, size, type }` |
-| `superseeded:progress` | `{ percentage, bytesUploaded, bytesTotal }` |
-| `superseeded:complete` | `{ uploadId, tusUrl, file }` |
-| `superseeded:error` | `{ message, code }` |
+| `superseeded:file-added` | `{ id, name, size, type }` |
+| `superseeded:progress` | `{ id, percentage, bytesUploaded, bytesTotal }` |
+| `superseeded:complete` | `{ id, uploadURL, fileUrl, name }` |
+| `superseeded:error` | `{ id, error }` |
 | `superseeded:server-notified` | `{ success, message, data }` |
+| `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` |
 
 ## Styling
 
@@ -230,7 +241,7 @@ POST /wp-json/superseeded/v1/upload-complete
 
 ### Resolve Specs Endpoint
 
-Proxy for the SuperSeeded resolve-specs API. Use this to process uploaded files and retrieve enriched data.
+Proxy for the SuperSeeded resolve-specs API. Use this to process items and retrieve enriched data.
 
 ```
 POST /wp-json/superseeded/v1/resolve-specs
@@ -239,11 +250,18 @@ POST /wp-json/superseeded/v1/resolve-specs
 **Request:**
 ```json
 {
-  "file_url": "https://secure.superseeded.ai/files/abc123"
+  "items": [
+    { "brand": "Bosch", "mpn": "GWS18V-45" },
+    { "brand": "Makita", "mpn": "XAG04Z" }
+  ]
 }
 ```
 
-This endpoint passes your delegation token and the uploaded file URL to the SuperSeeded API, which fetches and processes the file internally.
+This endpoint proxies requests to the SuperSeeded API using your server-side API key.
+
+<Note>
+For JSON file uploads, the widget automatically calls the API directly using the delegation token. The `superseeded:specs-resolved` event fires when enrichment completes.
+</Note>
 
 **Response:**
 ```json
