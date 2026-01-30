@@ -27,16 +27,17 @@ sequenceDiagram
     participant M as Merchant Frontend
     participant P as Platform Backend
     participant S as SuperSeeded API
-    participant U as Upload Service 
+    participant U as Upload Service
     
     M->>P: Initiate upload
     P->>S: POST /v1/auth/delegate-upload
     S-->>P: JWT token
     P-->>M: Pass token to frontend
     M->>U: Upload file with JWT
-    U->>S: POST /v1/internal/upload-hook
-    S-->>P: Webhook with enriched data
-    P-->>M: Display results
+    U-->>M: Return file URL
+    M->>S: POST /v1/resolve/specs/from-upload
+    S-->>M: Enriched data + usage
+    M-->>P: Forward results (optional)
 ```
 
 ## How it works
@@ -46,13 +47,13 @@ sequenceDiagram
     Your backend requests a short-lived JWT token for a specific merchant using the [Upload Delegation](/platform-integration/upload-delegation) endpoint.
   </Step>
   <Step title="Secure upload">
-    Your frontend uses this token to authenticate direct uploads to our upload service.
+    Your frontend uses this token to authenticate direct uploads to our TUS upload service. After upload completes, you receive the file URL.
   </Step>
-  <Step title="Processing">
-    Our backend parses the file and records usage.
+  <Step title="Call resolve-specs">
+    Your frontend calls `POST /v1/resolve/specs/from-upload` with the same delegation token and the file URL. The API fetches the file internally and processes it.
   </Step>
-  <Step title="Webhook response">
-    Your platform receives the processed data via webhook, ready for your merchants.
+  <Step title="Receive enriched data">
+    The API returns processed data directly in the response, including enriched line items and usage billing information.
   </Step>
 </Steps>
 
@@ -81,7 +82,7 @@ Not all document processing counts toward billing. See [Usage & Billing](/platfo
   <Card title="Usage & billing" icon="receipt" href="/platform-integration/usage-billing">
     Understand how usage is tracked and billed
   </Card>
-  <Card title="Processing webhook" icon="webhook" href="/platform-integration/processing-webhook">
-    Learn about post-processing data flow
+  <Card title="Resolve specs from upload" icon="sparkles" href="/platform-integration/tus-webhook">
+    Process uploads and get enriched data
   </Card>
 </CardGroup>

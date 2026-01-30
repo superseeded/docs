@@ -9,7 +9,7 @@ Choose your integration path:
 
 <CardGroup cols={2}>
   <Card title="Backend Integration" icon="server" href="#backend">
-    Get upload tokens and handle webhooks
+    Get upload tokens and call resolve-specs
   </Card>
   <Card title="Frontend Integration" icon="upload" href="#frontend">
     Upload files with Uppy
@@ -60,41 +60,62 @@ def get_upload_token(merchant_id: str, platform_api_key: str) -> str:
 
 </CodeGroup>
 
-### Handle Webhook
+### Call Resolve Specs
+
+After a successful upload, call the resolve-specs endpoint with the delegation token and file URL to process the file and retrieve enriched data.
 
 <CodeGroup>
 
-```javascript webhook-handler.js
-async function handleSuperSeedWebhook(payload) {
-  const { success, usage, enriched_data } = payload;
+```javascript resolve-specs.js
+async function resolveSpecs(delegationToken, fileUrl) {
+  const response = await fetch('https://api.superseeded.ai/v1/resolve/specs/from-upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${delegationToken}`, // Same token used for upload
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file_url: fileUrl })
+  });
   
-  if (!success) {
-    console.error('Upload failed');
-    return;
+  if (!response.ok) {
+    throw new Error(`Failed to resolve specs: ${response.statusText}`);
   }
   
-  console.log(`Processed ${usage.rows_processed} rows`);
-  console.log(`Billable: ${usage.is_billable}`);
+  const data = await response.json();
+  
+  console.log(`Processed ${data.usage.rows_processed} rows`);
+  console.log(`Billable: ${data.usage.is_billable}`);
   
   // Save enriched_data to your database
-  await saveEnrichedData(enriched_data);
+  await saveEnrichedData(data.enriched_data);
+  
+  return data;
 }
 ```
 
-```python webhook-handler.py
-async def handle_superseed_webhook(data):
-    if not data.get('success'):
-        print("Upload failed")
-        return
+```python resolve-specs.py
+import requests
+
+def resolve_specs(delegation_token: str, file_url: str) -> dict:
+    response = requests.post(
+        'https://api.superseeded.ai/v1/resolve/specs/from-upload',
+        headers={
+            'Authorization': f'Bearer {delegation_token}',  # Same token used for upload
+            'Content-Type': 'application/json'
+        },
+        json={'file_url': file_url}
+    )
+    response.raise_for_status()
     
-    usage = data['usage']
-    enriched_data = data['enriched_data']
+    data = response.json()
     
-    print(f"Processed {usage['rows_processed']} rows")
-    print(f"Billable: {usage['is_billable']}")
+    print(f"Processed {data['usage']['rows_processed']} rows")
+    print(f"Billable: {data['usage']['is_billable']}")
     
     # Save enriched_data to your database
-    await save_enriched_data(enriched_data)
+    save_enriched_data(data['enriched_data'])
+    
+    return data
 ```
 
 </CodeGroup>
@@ -138,9 +159,10 @@ Here's the complete end-to-end integration:
 
 ```javascript
 async function completeUploadFlow(merchantId, file) {
-  // 1. Get upload token from your backend
+  // 1. Get delegation token from your backend
   const token = await fetch('/api/get-upload-token', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ merchant_id: merchantId })
   }).then(r => r.json()).then(d => d.token);
   
@@ -152,10 +174,27 @@ async function completeUploadFlow(merchantId, file) {
     });
   
   uppy.addFile(file);
-  await uppy.upload();
+  const uploadResult = await uppy.upload();
   
-  // 3. Webhook will be called automatically with enriched data
-  console.log('Upload complete, waiting for webhook...');
+  // 3. Get the file URL from the upload result
+  const fileUrl = uploadResult.successful[0].uploadURL;
+  
+  // 4. Call resolve-specs with the same delegation token and file URL
+  const response = await fetch('https://api.superseeded.ai/v1/resolve/specs/from-upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`, // Same token used for upload
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ file_url: fileUrl })
+  });
+  
+  const enrichedData = await response.json();
+  
+  console.log('Processing complete:', enrichedData);
+  console.log(`Rows processed: ${enrichedData.usage.rows_processed}`);
+  
+  return enrichedData;
 }
 ```
 
@@ -168,8 +207,8 @@ For the complete set of examples, see the [examples repository](https://github.c
     <ul>
       <li><code>get-upload-token.js</code> - JavaScript token request</li>
       <li><code>get-upload-token.py</code> - Python token request</li>
-      <li><code>webhook-handler.js</code> - JavaScript webhook</li>
-      <li><code>webhook-handler.py</code> - Python webhook</li>
+      <li><code>resolve-specs.js</code> - JavaScript resolve-specs call</li>
+      <li><code>resolve-specs.py</code> - Python resolve-specs call</li>
     </ul>
   </AccordionItem>
   <AccordionItem title="Frontend Examples">
@@ -179,7 +218,7 @@ For the complete set of examples, see the [examples repository](https://github.c
   </AccordionItem>
   <AccordionItem title="Complete Flow">
     <ul>
-      <li><code>complete-flow.js</code> - End-to-end example</li>
+      <li><code>complete-flow.js</code> - End-to-end example with token, upload, and resolve-specs</li>
     </ul>
   </AccordionItem>
 </Accordion>

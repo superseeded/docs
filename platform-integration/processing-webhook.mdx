@@ -1,69 +1,26 @@
 ---
-title: "Processing Webhook"
-description: "Webhook endpoint for post-upload file processing"
+title: "Processing Webhook (Deprecated)"
+description: "Legacy internal webhook - superseded by frontend-initiated processing"
 ---
 
-## Internal Webhook
+<Warning>
+  **This internal webhook flow has been superseded.** 
+  
+  The new integration flow uses the [Resolve Specs from Upload](/platform-integration/tus-webhook) endpoint, which your frontend calls directly after upload completion.
+</Warning>
 
-**Endpoint:** `POST /v1/internal/upload-hook`
+## Migration
 
-This endpoint is called internally after a file is parsed. It's documented 
-here for transparency about the processing flow.
+The processing flow has changed from automatic webhook delivery to frontend-initiated API calls:
 
-## Flow
+| Old Flow | New Flow |
+|----------|----------|
+| Upload completes → Webhook fires automatically | Upload completes → Frontend calls API |
+| Platform receives webhook callback | Frontend receives direct API response |
+| Required webhook endpoint setup | No webhook infrastructure needed |
 
-1. File uploaded via upload service.
-2. Parser extracts structured JSON.
-3. Webhook receives extracted data.
-4. Usage event is recorded.
-5. Alignment engine resolves specs to growth equivalents.
-6. Response returned to Platform.
+## New Flow
 
-## Request Schema
+See [Resolve Specs from Upload](/platform-integration/tus-webhook) for the current processing endpoint documentation.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `file_path` | string | Path to uploaded file |
-| `merchant_id` | string | From JWT claim |
-| `api_key_id` | string | Platform API key ID |
-| `extracted_data` | object | Parsed file content including file_metadata and line_items |
-
-## Response
-
-Returns enriched data with alignment results:
-
-```json
-{
-  "success": true,
-  "usage": {
-    "is_billable": true,
-    "rows_processed": 42,
-    "file_origin": "external",
-    "month_totals": {
-      "month": "2024-01",
-      "is_active": true,
-      "row_count": 142,
-      "billable_row_count": 100
-    }
-  },
-  "enriched_data": [
-    {
-      "input_label": "400mm AS",
-      "match_confidence": "High",
-      "standard_data": {
-        "type": "Pot - Air Pruning",
-        "stage_name": "Advanced Production",
-        "stage_order": 4,
-        "logistics": {
-          "tier": "Pallet",
-          "is_stackable": false
-        },
-        "quality_profile": {
-          "transplant_shock_risk": "Very Low",
-          "customer_note": "Superior root structure; requires more frequent watering until planted."
-        }
-      }
-    }
-  ]
-}
-```
+The new endpoint `POST /v1/resolve/specs/from-upload` accepts the same delegation token used for upload, providing a simpler, more predictable integration pattern.

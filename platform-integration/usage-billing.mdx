@@ -95,7 +95,7 @@ Consider a merchant who processes two files in January:
 
 ## Monthly Usage Response
 
-When processing a file, the webhook response includes current month totals:
+When processing a file, the API response includes current month totals:
 
 ```json
 {
@@ -142,6 +142,6 @@ When processing a file, the webhook response includes current month totals:
     Overage = `max(0, billable_row_count - 500)` per merchant per month. Overage rates are provided in your Platform agreement.
   </Accordion>
   <Accordion title="Can I check a merchant's usage mid-month?">
-    Yes, every webhook response includes `month_totals` with current usage. You can also visit your <a href="https://superseeded.ai/account" target="_blank">account page</a> or query the billing API for aggregated reports.
+    Yes, every resolve-specs response includes `month_totals` with current usage. You can also visit your <a href="https://superseeded.ai/account" target="_blank">account page</a> or query the billing API for aggregated reports.
   </Accordion>
 </AccordionGroup>

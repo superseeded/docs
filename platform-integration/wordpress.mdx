@@ -35,6 +35,7 @@ The SuperSeeded Upload plugin provides a seamless way to add file upload capabil
 ```
 superseeded-upload/
 ├── superseeded-upload.php    # Main plugin file
+├── embed.min.js              # SuperSeeded embed SDK
 ├── js/
 │   ├── init.js               # Widget initializer
 │   └── block.js              # Gutenberg block
@@ -117,10 +118,14 @@ container.addEventListener('superseeded:progress', (e) => {
   console.log(`Progress: ${e.detail.percentage}%`);
 });
 
-// Upload complete
+// Upload complete - now call resolve-specs with the file URL
 container.addEventListener('superseeded:complete', (e) => {
   console.log('Upload complete:', e.detail.uploadId);
-  // Show success message, redirect, etc.
+  
+  // Call resolve-specs to process the uploaded file
+  SuperSeededWordPress.resolveSpecs(e.detail.tusUrl).then(function(result) {
+    console.log('Enriched data:', result.enriched_data);
+  });
 });
 
 // Upload error
@@ -135,8 +140,9 @@ container.addEventListener('superseeded:error', (e) => {
 |-------|-------------------|
 | `superseeded:file-added` | `{ name, size, type }` |
 | `superseeded:progress` | `{ percentage, bytesUploaded, bytesTotal }` |
-| `superseeded:complete` | `{ uploadId, fileName }` |
+| `superseeded:complete` | `{ uploadId, tusUrl, file }` |
 | `superseeded:error` | `{ message, code }` |
+| `superseeded:server-notified` | `{ success, message, data }` |
 
 ## Styling
 
@@ -178,33 +184,172 @@ if (window.SuperSeededWordPress) {
 }
 ```
 
-## REST API Endpoint
+## REST API Endpoints
 
-The plugin registers a REST API endpoint for the token proxy:
+The plugin registers REST API endpoints for token proxy and upload handling:
+
+### Token Endpoint
 
 ```
 POST /wp-json/superseeded/v1/token
 ```
 
-### Request
-
+**Request:**
 ```json
 {
   "merchant_id": "acme-corp"
 }
 ```
 
-### Response
-
+**Response:**
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs..."
 }
 ```
 
+### Upload Complete Endpoint
+
+Called automatically when an upload finishes. Fires the `superseeded_upload_complete` action.
+
+```
+POST /wp-json/superseeded/v1/upload-complete
+```
+
+**Request:**
+```json
+{
+  "upload_id": "abc123",
+  "tus_url": "https://secure.superseeded.ai/files/abc123",
+  "file_name": "products.csv",
+  "file_size": 102400,
+  "file_type": "text/csv",
+  "merchant_id": "acme-corp"
+}
+```
+
+### Resolve Specs Endpoint
+
+Proxy for the SuperSeeded resolve-specs API. Use this to process uploaded files and retrieve enriched data.
+
+```
+POST /wp-json/superseeded/v1/resolve-specs
+```
+
+**Request:**
+```json
+{
+  "file_url": "https://secure.superseeded.ai/files/abc123"
+}
+```
+
+This endpoint passes your delegation token and the uploaded file URL to the SuperSeeded API, which fetches and processes the file internally.
+
+**Response:**
+```json
+{
+  "success": true,
+  "enriched_data": {
+    "items": [...],
+    "summary": {...}
+  },
+  "usage": {
+    "rows_processed": 150,
+    "is_billable": true
+  }
+}
+```
+
 <Note>
-This endpoint requires authentication via WordPress nonce or logged-in user session.
+All endpoints require authentication via WordPress nonce (`X-WP-Nonce` header).
 </Note>
+
+## PHP Hooks
+
+The plugin provides WordPress actions that allow other plugins and themes to react to upload events.
+
+### superseeded_upload_complete
+
+Fires when an upload completes successfully. Use this to store upload records, trigger workflows, or integrate with other systems.
+
+```php
+add_action( 'superseeded_upload_complete', function( $upload_data ) {
+    // $upload_data contains:
+    // - upload_id: Unique upload identifier
+    // - tus_url: Full TUS upload URL
+    // - file_name: Original filename
+    // - file_size: Size in bytes
+    // - file_type: MIME type
+    // - merchant_id: Merchant identifier
+    // - timestamp: Upload completion time
+    // - user_id: WordPress user ID (0 if guest)
+
+    // Example: Store in custom table
+    global $wpdb;
+    $wpdb->insert(
+        $wpdb->prefix . 'superseeded_uploads',
+        $upload_data
+    );
+
+    // Example: Send notification
+    wp_mail(
+        get_option( 'admin_email' ),
+        'New SuperSeeded Upload',
+        'File uploaded: ' . $upload_data['file_name']
+    );
+}, 10, 1 );
+```
+
+### superseeded_specs_resolved
+
+Fires when the resolve-specs API returns enriched data from a processed upload.
+
+```php
+add_action( 'superseeded_specs_resolved', function( $response, $file_url ) {
+    // $response: The enriched data from SuperSeeded API
+    // $file_url: The file URL that was processed
+
+    // Example: Cache the results
+    set_transient(
+        'superseeded_specs_' . md5( $file_url ),
+        $response,
+        HOUR_IN_SECONDS
+    );
+}, 10, 2 );
+```
+
+## JavaScript API
+
+The `SuperSeededWordPress` global object provides methods for programmatic control:
+
+```javascript
+// Initialize widgets (useful after AJAX content loads)
+SuperSeededWordPress.init();
+
+// Initialize a specific container
+const container = document.getElementById('my-upload-container');
+SuperSeededWordPress.initializeWidget(container);
+
+// Call resolve-specs API to process an uploaded file
+// Pass the file_url from the upload complete event
+SuperSeededWordPress.resolveSpecs(fileUrl).then(function(result) {
+    console.log('Enriched data:', result.enriched_data);
+    console.log('Usage:', result.usage);
+}).catch(function(error) {
+    console.error('Failed to resolve specs:', error);
+});
+```
+
+### Server Notification Event
+
+Listen for the server's response after upload completion is recorded:
+
+```javascript
+document.addEventListener('superseeded:server-notified', function(e) {
+    console.log('Server recorded upload:', e.detail);
+    // e.detail contains the response from upload-complete endpoint
+});
+```
 
 ## Troubleshooting
 
@@ -227,6 +372,8 @@ This endpoint requires authentication via WordPress nonce or logged-in user sess
 3. Check browser network tab for specific error responses
 
 ## Complete Example
+
+### Frontend Integration
 
 Here's a complete example integrating the upload widget with a custom thank-you message:
 
@@ -257,6 +404,59 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+```
+
+### Backend Integration (PHP)
+
+Create a custom plugin or add to your theme's `functions.php` to handle uploads server-side:
+
+```php
+<?php
+/**
+ * Handle SuperSeeded upload completion
+ */
+add_action( 'superseeded_upload_complete', function( $upload_data ) {
+    // Log the upload
+    error_log( sprintf(
+        'SuperSeeded upload: %s (%s bytes) by user %d',
+        $upload_data['file_name'],
+        $upload_data['file_size'],
+        $upload_data['user_id']
+    ) );
+
+    // Store in database for tracking
+    update_user_meta(
+        $upload_data['user_id'],
+        'last_superseeded_upload',
+        $upload_data
+    );
+
+    // Trigger WooCommerce order note (if applicable)
+    if ( class_exists( 'WooCommerce' ) ) {
+        // Your WooCommerce integration logic
+    }
+}, 10, 1 );
+
+/**
+ * Handle resolved specs from processed upload
+ */
+add_action( 'superseeded_specs_resolved', function( $response, $file_url ) {
+    // Cache enriched product data
+    foreach ( $response['enriched_data']['items'] ?? [] as $item ) {
+        set_transient(
+            'product_specs_' . sanitize_key( $item['sku'] ),
+            $item,
+            DAY_IN_SECONDS
+        );
+    }
+    
+    // Log usage for billing tracking
+    error_log( sprintf(
+        'SuperSeeded processed %d rows from %s',
+        $response['usage']['rows_processed'] ?? 0,
+        $file_url
+    ) );
+}, 10, 2 );
 ```
 
 ## Plugin Source

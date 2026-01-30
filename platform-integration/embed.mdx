@@ -57,6 +57,7 @@ Your backend must implement the token endpoint to call our [delegate-upload API]
 | `autoProceed` | boolean | `true` | Start upload immediately after file selection |
 | `chunkSize` | number | `5242880` | TUS chunk size in bytes (default: 5MB) |
 | `retryDelays` | number[] | `[0, 1000, 3000, 5000]` | Retry timing after upload failures |
+| `onTokenReceived` | function | - | Callback when delegation token is received (store for processing call) |
 
 ## Events
 
@@ -77,7 +78,8 @@ SuperSeed.init({
   
   onComplete: (result) => {
     console.log('Upload complete:', result.uploadId);
-    // Webhook will deliver enriched data to your backend
+    console.log('File URL:', result.fileUrl);
+    // Call the resolve-specs endpoint with the file URL to process and get enriched data
   },
   
   onError: (error) => {
@@ -92,9 +94,10 @@ SuperSeed.init({
 |-------|---------|-------------|
 | `onFileAdded` | `{ name, size, type }` | File selected by user |
 | `onProgress` | `{ percentage, bytesUploaded, bytesTotal }` | Upload progress updates |
-| `onComplete` | `{ uploadId, fileName }` | Upload finished successfully |
+| `onComplete` | `{ uploadId, fileName, fileUrl }` | Upload finished successfully. Use `fileUrl` to call `/v1/resolve/specs/from-upload` |
 | `onError` | `{ message, code }` | Upload failed |
 | `onRetry` | `{ attempt, maxAttempts }` | Retry attempt started |
+| `onTokenReceived` | `string` | Delegation token received (store for processing call) |
 
 ## Headless Mode
 
@@ -117,6 +120,8 @@ For complete UI control, enable headless mode and build your own interface:
     
     onComplete: (result) => {
       document.getElementById('progress').textContent = 'Complete!';
+      // result.fileUrl contains the uploaded file URL
+      // Call /v1/resolve/specs/from-upload to process and get enriched data
     }
   });
 
@@ -242,6 +247,9 @@ For production stability, pin to a specific version:
   
   <script src="https://cdn.superseeded.ai/embed.min.js"></script>
   <script>
+    // Store the delegation token for use after upload
+    let delegationToken = null;
+    
     SuperSeed.init({
       container: '#superseeded-upload',
       tokenEndpoint: '/api/get-upload-token',
@@ -249,8 +257,25 @@ For production stability, pin to a specific version:
       allowedFileTypes: ['.csv', '.xlsx'],
       maxFileSize: 50 * 1024 * 1024, // 50MB
       
-      onComplete: (result) => {
-        alert('Upload complete! We will process your file shortly.');
+      onTokenReceived: (token) => {
+        // Store the token for processing call
+        delegationToken = token;
+      },
+      
+      onComplete: async (result) => {
+        // Call resolve-specs with the file URL to process and get enriched data
+        const response = await fetch('https://api.superseeded.ai/v1/resolve/specs/from-upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${delegationToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ file_url: result.fileUrl })
+        });
+        
+        const data = await response.json();
+        console.log('Enriched data:', data.enriched_data);
+        alert('File processed successfully!');
       },
       
       onError: (error) => {

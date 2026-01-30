@@ -40,7 +40,7 @@ Authorization: Bearer your_platform_api_key
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.superseed.com/v1/auth/delegate-upload \
+curl -X POST https://api.superseeded.ai/v1/auth/delegate-upload \
   -H "Authorization: Bearer your_platform_api_key" \
   -H "Content-Type: application/json" \
   -d '{"merchant_id": "merchant_123"}'
@@ -50,7 +50,7 @@ curl -X POST https://api.superseed.com/v1/auth/delegate-upload \
 import requests
 
 response = requests.post(
-    "https://api.superseed.com/v1/auth/delegate-upload",
+    "https://api.superseeded.ai/v1/auth/delegate-upload",
     headers={"Authorization": "Bearer your_platform_api_key"},
     json={"merchant_id": "merchant_123"}
 )
@@ -58,7 +58,7 @@ token_data = response.json()
 ```
 
 ```javascript Node.js
-const response = await fetch('https://api.superseed.com/v1/auth/delegate-upload', {
+const response = await fetch('https://api.superseeded.ai/v1/auth/delegate-upload', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer your_platform_api_key',
@@ -98,8 +98,14 @@ The generated token contains claims that are used for attribution and billing:
 |-------|-------------|
 | `sub` | The merchant_id you provided |
 | `api_key_id` | Your Platform's API key identifier |
+| `scope` | Token scope (e.g., `upload`) |
+| `entity_type` | Entity type identifier |
 | `exp` | Token expiration timestamp |
 | `iat` | Token issued-at timestamp |
+
+<Info>
+  The same delegation token is used for both the TUS upload **and** the subsequent processing request. This simplifies your integration since one token handles the entire flow.
+</Info>
 
 ## Usage Flow
 
@@ -134,10 +140,26 @@ The generated token contains claims that are used for attribution and billing:
     ```
   </Step>
   <Step title="Direct Upload">
-    Uppy uploads the file directly to our Tus server using the token for authentication.
+    Uppy uploads the file directly to our TUS server using the token for authentication. After the upload completes, Uppy returns the file URL.
   </Step>
-  <Step title="Processing & Webhook">
-    After upload and processing, your platform receives the enriched data via webhook. See [Processing Webhook](/platform-integration/tus-webhook).
+  <Step title="Call Processing Endpoint">
+    Your frontend calls the resolve-specs endpoint with the **same delegation token** and the uploaded file URL.
+    ```javascript
+    const response = await fetch('https://api.superseeded.ai/v1/resolve/specs/from-upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${uploadToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        file_url: uploadResult.uploadURL
+      })
+    });
+    const { enriched_data, usage } = await response.json();
+    ```
+  </Step>
+  <Step title="Receive Enriched Data">
+    The API fetches the file internally, processes it, bills the merchant (from the JWT), and returns enriched data directly in the response. See [Resolve Specs from Upload](/platform-integration/tus-webhook) for the full response schema.
   </Step>
 </Steps>
 
