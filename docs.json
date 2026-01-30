@@ -53,7 +53,8 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/endpoint/root",
-              "api-reference/endpoint/resolve-specs"
+              "api-reference/endpoint/resolve-specs",
+              "api-reference/endpoint/route-discovery"
             ]
           }
         ]

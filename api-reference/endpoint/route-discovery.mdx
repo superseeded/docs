@@ -1,0 +1,126 @@
+---
+title: "Route Discovery"
+api: "GET /v1/routes/from-upload"
+description: "Discover available post-upload processing routes"
+---
+
+## Overview
+
+The route discovery endpoint returns a list of available API routes that can be called after a file upload completes. This allows integrations (like the WordPress plugin) to dynamically discover what processing options are available.
+
+<Note>
+This endpoint is **public** and does not require authentication. This allows clients to discover available routes before the user authenticates.
+</Note>
+
+## Request
+
+```bash
+curl https://api.superseeded.ai/v1/routes/from-upload
+```
+
+No request body or authentication is required.
+
+## Response
+
+<ResponseField name="routes" type="array" required>
+  List of available post-upload processing routes
+
+  <Expandable title="Route object properties">
+    <ResponseField name="id" type="string" required>
+      Unique route identifier (e.g., `resolve-specs-from-upload`)
+    </ResponseField>
+    <ResponseField name="name" type="string" required>
+      Human-readable route name for display in UIs
+    </ResponseField>
+    <ResponseField name="description" type="string" required>
+      Description of what this route does
+    </ResponseField>
+    <ResponseField name="endpoint" type="string" required>
+      Full API endpoint path (e.g., `/v1/resolve/specs/from-upload`)
+    </ResponseField>
+    <ResponseField name="method" type="string" required>
+      HTTP method (`POST`, `GET`, etc.)
+    </ResponseField>
+    <ResponseField name="requires_auth" type="boolean" required>
+      Whether the route requires a delegation token
+    </ResponseField>
+    <ResponseField name="accepted_file_types" type="array" required>
+      File extensions this route can process (e.g., `[".json"]`)
+    </ResponseField>
+    <ResponseField name="category" type="string">
+      Optional category for grouping routes (e.g., `enrichment`, `validation`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="version" type="string" required>
+  API version for the route schema (currently `1.0`)
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "routes": [
+    {
+      "id": "resolve-specs-from-upload",
+      "name": "Resolve Specifications",
+      "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
+      "endpoint": "/v1/resolve/specs/from-upload",
+      "method": "POST",
+      "requires_auth": true,
+      "accepted_file_types": [".json"],
+      "category": "enrichment"
+    }
+  ],
+  "version": "1.0"
+}
+```
+
+## Usage
+
+### WordPress Plugin
+
+The WordPress plugin uses this endpoint to populate the "Post-Upload Processing" settings field. Routes are cached for 1 hour using WordPress transients.
+
+```php
+$response = wp_remote_get('https://api.superseeded.ai/v1/routes/from-upload');
+$body = json_decode(wp_remote_retrieve_body($response), true);
+$routes = $body['routes'];
+```
+
+### JavaScript
+
+Frontend integrations can fetch available routes to build dynamic UIs:
+
+```javascript
+fetch('https://api.superseeded.ai/v1/routes/from-upload')
+  .then(response => response.json())
+  .then(data => {
+    data.routes.forEach(route => {
+      console.log(`${route.name}: ${route.description}`);
+    });
+  });
+```
+
+### Calling Discovered Routes
+
+After discovering routes, call them with the file URL and delegation token:
+
+```javascript
+// For each enabled route
+const response = await fetch(apiBaseUrl + route.endpoint, {
+  method: route.method,
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + delegationToken  // if requires_auth is true
+  },
+  body: JSON.stringify({ file_url: uploadedFileUrl })
+});
+```
+
+## Caching Recommendations
+
+- **Cache duration**: Routes rarely change, so cache for 1-24 hours
+- **Cache invalidation**: Provide a manual refresh option for administrators
+- **Fallback**: If the endpoint is unreachable, use a hardcoded default route list

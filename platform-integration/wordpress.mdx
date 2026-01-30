@@ -61,6 +61,20 @@ Navigate to **Settings > SuperSeeded Upload** to configure the plugin.
 | Allowed File Types | `.csv,.xlsx,.xls` | Comma-separated extensions |
 | Max File Size | `104857600` | Maximum size in bytes (100MB) |
 | Show Debug Info | `false` | Display enrichment results accordion and console logs |
+| Post-Upload Processing | All enabled | Select which API routes to call after upload completes |
+
+### Post-Upload Processing Routes
+
+The plugin can automatically call API routes after a file upload completes. Routes are discovered dynamically from the API and can be enabled/disabled in settings.
+
+<Frame caption="Post-Upload Processing settings with route checkboxes">
+  <img src="/images/wordpress-routes-settings.png" alt="Route configuration in WordPress" />
+</Frame>
+
+Available routes include:
+- **Resolve Specifications** - Classify pot sizes and plant specifications (JSON files only)
+
+Click **"Refresh Available Routes"** to fetch the latest routes from the API. Routes are cached for 1 hour.
 
 <Warning>
 Your API key is stored securely on the server and proxied through WordPress REST API. It is never exposed to the frontend.
@@ -142,6 +156,22 @@ container.addEventListener('superseeded:specs-resolved', (e) => {
   console.log('Enrichment complete:', e.detail.specsData);
   // Access enriched items, usage info, etc.
 });
+
+// Individual route completed
+container.addEventListener('superseeded:route-complete', (e) => {
+  console.log(`Route ${e.detail.route.name} completed:`, e.detail.result);
+});
+
+// Individual route failed (other routes continue)
+container.addEventListener('superseeded:route-error', (e) => {
+  console.error(`Route ${e.detail.route.name} failed:`, e.detail.error);
+});
+
+// All routes finished processing
+container.addEventListener('superseeded:routes-complete', (e) => {
+  console.log(`Routes complete: ${e.detail.successful} succeeded, ${e.detail.failed} failed`);
+  console.log('All results:', e.detail.results);
+});
 ```
 
 ### Event Details
@@ -154,6 +184,9 @@ container.addEventListener('superseeded:specs-resolved', (e) => {
 | `superseeded:error` | `{ id, error }` |
 | `superseeded:server-notified` | `{ success, message, data }` |
 | `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` |
+| `superseeded:route-complete` | `{ fileId, route, result }` |
+| `superseeded:route-error` | `{ fileId, route, error }` |
+| `superseeded:routes-complete` | `{ fileId, results, successful, failed }` |
 
 ## Styling
 
@@ -356,6 +389,18 @@ SuperSeededWordPress.resolveSpecs(fileUrl).then(function(result) {
 }).catch(function(error) {
     console.error('Failed to resolve specs:', error);
 });
+
+// Execute enabled routes manually (called automatically after upload)
+SuperSeededWordPress.executeEnabledRoutes(fileUrl, token, file, fileId, container, fileElement)
+    .then(function(results) {
+        console.log('All routes processed:', results);
+    });
+
+// Execute a single route
+SuperSeededWordPress.executeRoute(routeConfig, fileUrl, token, apiBaseUrl)
+    .then(function(data) {
+        console.log('Route result:', data);
+    });
 ```
 
 ### Server Notification Event
