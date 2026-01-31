@@ -28,6 +28,26 @@
     }
   ],
   "paths": {
+    "/routes/from-upload": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Route Discovery",
+        "description": "Returns a list of available API routes that can be called after a file upload completes. This allows integrations to dynamically discover what processing options are available.",
+        "operationId": "getRoutesFromUpload",
+        "responses": {
+          "200": {
+            "description": "List of available post-upload processing routes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteDiscoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": ["System"],
@@ -109,6 +129,86 @@
   },
   "components": {
     "schemas": {
+      "RouteDiscoveryResponse": {
+        "type": "object",
+        "properties": {
+          "routes": {
+            "type": "array",
+            "description": "List of available post-upload processing routes",
+            "items": {
+              "$ref": "#/components/schemas/Route"
+            }
+          },
+          "version": {
+            "type": "string",
+            "description": "API version for the route schema",
+            "example": "1.0"
+          }
+        },
+        "example": {
+          "routes": [
+            {
+              "id": "resolve-specs-from-upload",
+              "name": "Resolve Specifications",
+              "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
+              "endpoint": "/v1/resolve/specs/from-upload",
+              "method": "POST",
+              "requires_auth": true,
+              "accepted_file_types": [".json"],
+              "category": "enrichment"
+            }
+          ],
+          "version": "1.0"
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique route identifier",
+            "example": "resolve-specs-from-upload"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable route name for display in UIs",
+            "example": "Resolve Specifications"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what this route does",
+            "example": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories"
+          },
+          "endpoint": {
+            "type": "string",
+            "description": "Full API endpoint path",
+            "example": "/v1/resolve/specs/from-upload"
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method",
+            "example": "POST"
+          },
+          "requires_auth": {
+            "type": "boolean",
+            "description": "Whether the route requires a delegation token",
+            "example": true
+          },
+          "accepted_file_types": {
+            "type": "array",
+            "description": "File extensions this route can process",
+            "items": {
+              "type": "string"
+            },
+            "example": [".json"]
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category for grouping routes",
+            "example": "enrichment"
+          }
+        }
+      },
       "ResolveSpecsRequest": {
         "type": "object",
         "required": ["items"],
