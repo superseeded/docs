@@ -51,17 +51,31 @@ Navigate to **Settings > SuperSeeded Upload** to configure the plugin.
 | Setting | Description |
 |---------|-------------|
 | Platform API Key | Your SuperSeeded API key (from dashboard) |
-| Default Merchant ID | The merchant ID for uploads |
 
 ### Optional Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| Merchant Token Mode | `WordPress User` | How unique merchant tokens are generated for billing (see below) |
 | Theme | `light` | Widget theme (`light` or `dark`) |
-| Allowed File Types | `.csv,.xlsx,.xls` | Comma-separated extensions |
+| Allowed File Types | `.csv,.xlsx,.xls,.json,.pdf` | Comma-separated extensions |
 | Max File Size | `104857600` | Maximum size in bytes (100MB) |
 | Show Debug Info | `false` | Display enrichment results accordion and console logs |
 | Post-Upload Processing | All enabled | Select which API routes to call after upload completes |
+
+### Merchant Token Mode
+
+Controls how unique merchant tokens are generated for billing purposes:
+
+| Mode | Description |
+|------|-------------|
+| **WordPress User** (Recommended) | Unique token per logged-in user. Falls back to session for guests. Best for membership sites. |
+| **Session Token** | Unique token per browser session. Works for all visitors including guests. |
+| **Site-Wide** | Single token for entire site. Use if the WordPress site belongs to one of your customers. |
+
+<Note>
+Merchant tokens are computed server-side from WordPress user/session identity and cannot be manipulated by the frontend. This ensures accurate per-user billing.
+</Note>
 
 ### Post-Upload Processing Routes
 
@@ -77,7 +91,7 @@ Available routes include:
 Click **"Refresh Available Routes"** to fetch the latest routes from the API. Routes are cached for 1 hour.
 
 <Warning>
-Your API key is stored securely on the server and proxied through WordPress REST API. It is never exposed to the frontend.
+Your Platform API key is stored securely on the server and proxied through WordPress REST API. It is never exposed to the frontend.
 </Warning>
 
 ## Usage
@@ -98,7 +112,7 @@ Add the upload widget to any page or post:
 | `class` | Additional CSS classes | `class="my-uploader"` |
 
 <Note>
-Merchant ID is configured in settings only and cannot be overridden per-shortcode for security reasons.
+Merchant tokens are computed server-side based on the Merchant Token Mode setting and cannot be overridden per-shortcode for security reasons.
 </Note>
 
 #### Example with Attributes
@@ -136,14 +150,11 @@ container.addEventListener('superseeded:progress', (e) => {
   console.log(`Progress: ${e.detail.percentage}%`);
 });
 
-// Upload complete - now call resolve-specs with the file URL
+// Upload complete
 container.addEventListener('superseeded:complete', (e) => {
-  console.log('Upload complete:', e.detail.uploadId);
-  
-  // Call resolve-specs to process the uploaded file
-  SuperSeededWordPress.resolveSpecs(e.detail.tusUrl).then(function(result) {
-    console.log('Enriched data:', result.enriched_data);
-  });
+  console.log('Upload complete:', e.detail.id);
+  console.log('TUS URL:', e.detail.uploadURL);
+  console.log('File URL:', e.detail.fileUrl);
 });
 
 // Upload error
@@ -180,13 +191,13 @@ container.addEventListener('superseeded:routes-complete', (e) => {
 |-------|-------------------|
 | `superseeded:file-added` | `{ id, name, size, type }` |
 | `superseeded:progress` | `{ id, percentage, bytesUploaded, bytesTotal }` |
-| `superseeded:complete` | `{ id, uploadURL, fileUrl, name }` |
+| `superseeded:complete` | `{ id, uploadURL, fileUrl, name }` - `uploadURL` is TUS endpoint, `fileUrl` is download URL |
 | `superseeded:error` | `{ id, error }` |
 | `superseeded:server-notified` | `{ success, message, data }` |
-| `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` |
-| `superseeded:route-complete` | `{ fileId, route, result }` |
+| `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` - fired when resolve-specs route completes |
+| `superseeded:route-complete` | `{ fileId, route, result }` - `result` contains `{ route_id, success, data }` |
 | `superseeded:route-error` | `{ fileId, route, error }` |
-| `superseeded:routes-complete` | `{ fileId, results, successful, failed }` |
+| `superseeded:routes-complete` | `{ fileId, results, successful, failed }` - fired when all routes finish |
 
 ## Styling
 
@@ -234,21 +245,22 @@ The plugin registers REST API endpoints for token proxy and upload handling:
 
 ### Token Endpoint
 
+Returns a delegation token for direct uploads to the SuperSeeded TUS endpoint. The merchant token is computed server-side based on the configured Merchant Token Mode.
+
 ```
 POST /wp-json/superseeded/v1/token
 ```
 
 **Request:**
 ```json
-{
-  "merchant_id": "acme-corp"
-}
+{}
 ```
 
 **Response:**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "tusEndpoint": "https://secure.superseeded.ai/files/"
 }
 ```
 
@@ -283,33 +295,32 @@ POST /wp-json/superseeded/v1/resolve-specs
 **Request:**
 ```json
 {
-  "items": [
-    { "brand": "Bosch", "mpn": "GWS18V-45" },
-    { "brand": "Makita", "mpn": "XAG04Z" }
-  ]
+  "items": ["400mm AS", "20L Planter Bag"]
 }
 ```
 
 This endpoint proxies requests to the SuperSeeded API using your server-side API key.
 
-<Note>
-For JSON file uploads, the widget automatically calls the API directly using the delegation token. The `superseeded:specs-resolved` event fires when enrichment completes.
-</Note>
-
 **Response:**
 ```json
 {
-  "success": true,
-  "enriched_data": {
-    "items": [...],
-    "summary": {...}
-  },
-  "usage": {
-    "rows_processed": 150,
-    "is_billable": true
-  }
+  "results": [
+    {
+      "input_label": "400mm AS",
+      "match_confidence": "Medium",
+      "standard_data": {
+        "id": "3.2",
+        "type": "Pot - Square",
+        "stage_name": "Retail & Small Production"
+      }
+    }
+  ]
 }
 ```
+
+<Note>
+For file uploads, the widget automatically calls the `/v1/resolve/specs/from-upload` endpoint directly using the delegation token and the file URL. The `superseeded:specs-resolved` event fires when enrichment completes.
+</Note>
 
 <Note>
 All endpoints require authentication via WordPress nonce (`X-WP-Nonce` header).
@@ -353,16 +364,16 @@ add_action( 'superseeded_upload_complete', function( $upload_data ) {
 
 ### superseeded_specs_resolved
 
-Fires when the resolve-specs API returns enriched data from a processed upload.
+Fires when the resolve-specs API returns enriched data from a processed request via the WordPress proxy endpoint.
 
 ```php
-add_action( 'superseeded_specs_resolved', function( $response, $file_url ) {
-    // $response: The enriched data from SuperSeeded API
-    // $file_url: The file URL that was processed
+add_action( 'superseeded_specs_resolved', function( $response, $items ) {
+    // $response: The resolved specs response from SuperSeeded API
+    // $items: The original items array that was submitted
 
     // Example: Cache the results
     set_transient(
-        'superseeded_specs_' . md5( $file_url ),
+        'superseeded_specs_' . md5( serialize( $items ) ),
         $response,
         HOUR_IN_SECONDS
     );
@@ -374,21 +385,34 @@ add_action( 'superseeded_specs_resolved', function( $response, $file_url ) {
 The `SuperSeededWordPress` global object provides methods for programmatic control:
 
 ```javascript
-// Initialize widgets (useful after AJAX content loads)
+// Initialize all widgets (useful after AJAX content loads)
 SuperSeededWordPress.init();
 
 // Initialize a specific container
 const container = document.getElementById('my-upload-container');
 SuperSeededWordPress.initializeWidget(container);
 
-// Call resolve-specs API to process an uploaded file
-// Pass the file_url from the upload complete event
-SuperSeededWordPress.resolveSpecs(fileUrl).then(function(result) {
-    console.log('Enriched data:', result.enriched_data);
-    console.log('Usage:', result.usage);
+// Fetch a new delegation token
+SuperSeededWordPress.fetchDelegationToken().then(function(tokenData) {
+    console.log('Token:', tokenData.token);
+    console.log('TUS Endpoint:', tokenData.tusEndpoint);
+});
+
+// Call resolve-specs via WordPress proxy (for manual item arrays)
+SuperSeededWordPress.resolveSpecs(['400mm AS', '20L Planter Bag']).then(function(result) {
+    console.log('Results:', result.results);
 }).catch(function(error) {
     console.error('Failed to resolve specs:', error);
 });
+
+// Call resolve-specs directly using delegation token and file URL
+// (This is what the widget uses internally after upload)
+SuperSeededWordPress.resolveSpecsFromUpload(fileUrl, token).then(function(result) {
+    console.log('Results:', result.results);
+});
+
+// Notify WordPress of upload completion
+SuperSeededWordPress.notifyUploadComplete(result, fileName, fileSize, fileType);
 
 // Execute enabled routes manually (called automatically after upload)
 SuperSeededWordPress.executeEnabledRoutes(fileUrl, token, file, fileId, container, fileElement)
@@ -397,7 +421,7 @@ SuperSeededWordPress.executeEnabledRoutes(fileUrl, token, file, fileId, containe
     });
 
 // Execute a single route
-SuperSeededWordPress.executeRoute(routeConfig, fileUrl, token, apiBaseUrl)
+SuperSeededWordPress.executeRoute(routeConfig, fileUrl, token, apiBaseUrl, fileName)
     .then(function(data) {
         console.log('Route result:', data);
     });
@@ -501,23 +525,22 @@ add_action( 'superseeded_upload_complete', function( $upload_data ) {
 }, 10, 1 );
 
 /**
- * Handle resolved specs from processed upload
+ * Handle resolved specs from processed request
  */
-add_action( 'superseeded_specs_resolved', function( $response, $file_url ) {
-    // Cache enriched product data
-    foreach ( $response['enriched_data']['items'] ?? [] as $item ) {
+add_action( 'superseeded_specs_resolved', function( $response, $items ) {
+    // Cache resolved specs data
+    foreach ( $response['results'] ?? [] as $result ) {
         set_transient(
-            'product_specs_' . sanitize_key( $item['sku'] ),
-            $item,
+            'product_specs_' . sanitize_key( $result['input_label'] ),
+            $result,
             DAY_IN_SECONDS
         );
     }
-    
-    // Log usage for billing tracking
+
+    // Log processing
     error_log( sprintf(
-        'SuperSeeded processed %d rows from %s',
-        $response['usage']['rows_processed'] ?? 0,
-        $file_url
+        'SuperSeeded resolved %d items',
+        count( $response['results'] ?? [] )
     ) );
 }, 10, 2 );
 ```
