@@ -85,7 +85,7 @@
       "post": {
         "tags": ["Resolvers"],
         "summary": "Resolve Specs",
-        "description": "Takes a list of raw, unstructured container strings (e.g., '400mm AS', '20L Bag') and maps them to a standardized 'Growth Equivalent' hierarchy. The response enriches each item with biological maturity stages, logistical data (stackability, freight tier), and quality inspection risks.",
+        "description": "Unified endpoint for resolving plant specifications. Accepts input as: (1) JSON body with items array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload. Supported file formats: JSON, XLSX, XLS, PDF, TXT, PNG, JPG, JPEG, GIF, WEBP. Authentication: Basic/Pro plans use X-API-Key header; Teams plans with platform integration require Authorization Bearer token.",
         "operationId": "resolveSpecs",
         "security": [
           {
@@ -148,13 +148,13 @@
         "example": {
           "routes": [
             {
-              "id": "resolve-specs-from-upload",
+              "id": "resolve-specs",
               "name": "Resolve Specifications",
               "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
-              "endpoint": "/v1/resolve/specs/from-upload",
+              "endpoint": "/v1/resolve/specs",
               "method": "POST",
               "requires_auth": true,
-              "accepted_file_types": [".json"],
+              "accepted_file_types": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"],
               "category": "enrichment"
             }
           ],
@@ -167,7 +167,7 @@
           "id": {
             "type": "string",
             "description": "Unique route identifier",
-            "example": "resolve-specs-from-upload"
+            "example": "resolve-specs"
           },
           "name": {
             "type": "string",
@@ -182,7 +182,7 @@
           "endpoint": {
             "type": "string",
             "description": "Full API endpoint path",
-            "example": "/v1/resolve/specs/from-upload"
+            "example": "/v1/resolve/specs"
           },
           "method": {
             "type": "string",
@@ -200,7 +200,7 @@
             "items": {
               "type": "string"
             },
-            "example": [".json"]
+            "example": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"]
           },
           "category": {
             "type": "string",
@@ -211,14 +211,27 @@
       },
       "ResolveSpecsRequest": {
         "type": "object",
-        "required": ["items"],
+        "description": "Request body for /resolve/specs. Accepts items array, file_url, or multipart file upload.",
         "properties": {
           "items": {
             "type": "array",
-            "description": "An array of raw strings representing pot sizes or plant states.",
+            "description": "An array of raw strings representing pot sizes or plant states. Takes precedence over file inputs.",
             "items": {
               "type": "string"
             }
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL to a previously uploaded file (from TUS storage). Must be from secure.superseeded.ai or api.superseeded.ai."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Optional filename hint for format detection when using file_url."
+          },
+          "extraction_type": {
+            "type": "string",
+            "description": "What to extract from files: pot_sizes, species, or generic.",
+            "default": "pot_sizes"
           }
         },
         "example": {

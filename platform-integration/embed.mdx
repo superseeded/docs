@@ -94,7 +94,7 @@ SuperSeed.init({
 |-------|---------|-------------|
 | `onFileAdded` | `{ name, size, type }` | File selected by user |
 | `onProgress` | `{ percentage, bytesUploaded, bytesTotal }` | Upload progress updates |
-| `onComplete` | `{ uploadId, fileName, fileUrl }` | Upload finished successfully. Use `fileUrl` to call `/v1/resolve/specs/from-upload` |
+| `onComplete` | `{ uploadId, fileName, fileUrl }` | Upload finished successfully. Use `fileUrl` to call `/v1/resolve/specs` |
 | `onError` | `{ message, code }` | Upload failed |
 | `onRetry` | `{ attempt, maxAttempts }` | Retry attempt started |
 | `onTokenReceived` | `string` | Delegation token received (store for processing call) |
@@ -121,7 +121,7 @@ For complete UI control, enable headless mode and build your own interface:
     onComplete: (result) => {
       document.getElementById('progress').textContent = 'Complete!';
       // result.fileUrl contains the uploaded file URL
-      // Call /v1/resolve/specs/from-upload to process and get enriched data
+      // Call /v1/resolve/specs to process and get enriched data
     }
   });
 
@@ -264,7 +264,7 @@ For production stability, pin to a specific version:
       
       onComplete: async (result) => {
         // Call resolve-specs with the file URL to process and get enriched data
-        const response = await fetch('https://api.superseeded.ai/v1/resolve/specs/from-upload', {
+        const response = await fetch('https://api.superseeded.ai/v1/resolve/specs', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${delegationToken}`,

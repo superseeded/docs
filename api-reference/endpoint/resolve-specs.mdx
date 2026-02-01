@@ -3,13 +3,91 @@ title: 'Resolve Specs'
 openapi: 'POST /resolve/specs'
 ---
 
-### Request Body
+Classify plant pot sizes and specifications into Growth Equivalent Hierarchy categories.
 
-The request body should be a JSON object with an `items` field containing an array of strings.
+## Input Options
 
-<ParamField body="items" type="string[]" required>
-  An array of raw plant specification strings to be resolved.
+This endpoint accepts input in three ways:
+
+### 1. JSON Body with Items Array
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+  -H "X-API-Key: sk_..." \
+  -H "Content-Type: application/json" \
+  -d '{"items": ["400mm AS", "20L Planter Bag"]}'
+```
+
+### 2. JSON Body with File URL (TUS Upload)
+
+For files uploaded via TUS protocol:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+  -H "Authorization: Bearer <delegation_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"file_url": "https://secure.superseeded.ai/files/abc123", "filename": "data.xlsx"}'
+```
+
+### 3. Direct File Upload (Multipart)
+
+Upload files directly without TUS - reduces round trips for Basic/Pro plans:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+  -H "X-API-Key: sk_..." \
+  -F "file=@data.xlsx" \
+  -F "extraction_type=pot_sizes"
+```
+
+## Request Body (JSON)
+
+<ParamField body="items" type="string[]">
+  An array of raw plant specification strings to be resolved. Takes precedence over file inputs.
 </ParamField>
+
+<ParamField body="file_url" type="string">
+  URL to a previously uploaded file (from TUS storage). Must be from `secure.superseeded.ai` or `api.superseeded.ai`.
+</ParamField>
+
+<ParamField body="filename" type="string">
+  Optional filename hint for format detection when using `file_url`.
+</ParamField>
+
+<ParamField body="extraction_type" type="string" default="pot_sizes">
+  What to extract from files: `pot_sizes`, `species`, or `generic`.
+</ParamField>
+
+## Form Fields (Multipart)
+
+<ParamField body="file" type="file">
+  Direct file upload. Supported formats: JSON, XLSX, XLS, PDF, TXT, PNG, JPG, JPEG, GIF, WEBP.
+</ParamField>
+
+<ParamField body="extraction_type" type="string" default="pot_sizes">
+  What to extract from the file.
+</ParamField>
+
+## Authentication
+
+| Plan | Auth Method | Header |
+|------|-------------|--------|
+| Basic/Pro | API Key | `X-API-Key: sk_...` |
+| Teams (platform) | Delegation Token | `Authorization: Bearer <token>` |
+
+**Basic/Pro plans** can use direct API key authentication for all input methods including direct file upload.
+
+**Teams plans with platform integration** require a delegation token obtained via `POST /v1/auth/delegate-upload`. This ensures each request is attributed to the correct merchant for billing.
+
+## Supported File Formats
+
+| Format | Extensions | Processing |
+|--------|------------|------------|
+| JSON | `.json` | Direct parsing of items array |
+| Excel | `.xlsx`, `.xls` | Text extraction from cells |
+| PDF | `.pdf` | Text extraction |
+| Text | `.txt` | Direct text processing |
+| Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` | AI vision extraction |
 
 <ResponseExample>
 
@@ -21,24 +99,7 @@ The request body should be a JSON object with an `items` field containing an arr
       "match_confidence": "Medium",
       "standard_data": {
         "id": "3.2",
-        "evergreen_connect_potsize_id": [
-          606,
-          693,
-          707,
-          838,
-          753,
-          775,
-          509,
-          832,
-          556,
-          533,
-          755,
-          541,
-          560,
-          786,
-          780,
-          656
-        ],
+        "evergreen_connect_potsize_id": [606, 693, 707, 838, 753, 775, 509, 832, 556, 533, 755, 541, 560, 786, 780, 656],
         "type": "Pot - Square",
         "stage_order": 3,
         "stage_name": "Retail & Small Production",
@@ -63,9 +124,7 @@ The request body should be a JSON object with an `items` field containing an arr
       "match_confidence": "High",
       "standard_data": {
         "id": "4.2",
-        "evergreen_connect_potsize_id": [
-          730
-        ],
+        "evergreen_connect_potsize_id": [730],
         "type": "Planter Bag",
         "stage_order": 4,
         "stage_name": "Advanced Production",

@@ -27,7 +27,7 @@ No request body or authentication is required.
 
   <Expandable title="Route object properties">
     <ResponseField name="id" type="string" required>
-      Unique route identifier (e.g., `resolve-specs-from-upload`)
+      Unique route identifier (e.g., `resolve-specs`)
     </ResponseField>
     <ResponseField name="name" type="string" required>
       Human-readable route name for display in UIs
@@ -36,7 +36,7 @@ No request body or authentication is required.
       Description of what this route does
     </ResponseField>
     <ResponseField name="endpoint" type="string" required>
-      Full API endpoint path (e.g., `/v1/resolve/specs/from-upload`)
+      Full API endpoint path (e.g., `/v1/resolve/specs`)
     </ResponseField>
     <ResponseField name="method" type="string" required>
       HTTP method (`POST`, `GET`, etc.)
@@ -63,13 +63,13 @@ No request body or authentication is required.
 {
   "routes": [
     {
-      "id": "resolve-specs-from-upload",
+      "id": "resolve-specs",
       "name": "Resolve Specifications",
       "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
-      "endpoint": "/v1/resolve/specs/from-upload",
+      "endpoint": "/v1/resolve/specs",
       "method": "POST",
       "requires_auth": true,
-      "accepted_file_types": [".json"],
+      "accepted_file_types": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"],
       "category": "enrichment"
     }
   ],

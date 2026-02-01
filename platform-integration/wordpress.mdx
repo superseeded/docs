@@ -86,7 +86,7 @@ The plugin can automatically call API routes after a file upload completes. Rout
 </Frame>
 
 Available routes include:
-- **Resolve Specifications** - Classify pot sizes and plant specifications (JSON files only)
+- **Resolve Specifications** - Classify pot sizes and plant specifications (supports JSON, Excel, PDF, images)
 
 Click **"Refresh Available Routes"** to fetch the latest routes from the API. Routes are cached for 1 hour.
 
@@ -319,7 +319,7 @@ This endpoint proxies requests to the SuperSeeded API using your server-side API
 ```
 
 <Note>
-For file uploads, the widget automatically calls the `/v1/resolve/specs/from-upload` endpoint directly using the delegation token and the file URL. The `superseeded:specs-resolved` event fires when enrichment completes.
+For file uploads, the widget automatically calls the `/v1/resolve/specs` endpoint directly using the delegation token and the file URL. The `superseeded:specs-resolved` event fires when enrichment completes.
 </Note>
 
 <Note>

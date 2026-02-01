@@ -35,7 +35,7 @@ sequenceDiagram
     P-->>M: Pass token to frontend
     M->>U: Upload file with JWT
     U-->>M: Return file URL
-    M->>S: POST /v1/resolve/specs/from-upload
+    M->>S: POST /v1/resolve/specs
     S-->>M: Enriched data + usage
     M-->>P: Forward results (optional)
 ```
@@ -50,7 +50,7 @@ sequenceDiagram
     Your frontend uses this token to authenticate direct uploads to our TUS upload service. After upload completes, you receive the file URL.
   </Step>
   <Step title="Call resolve-specs">
-    Your frontend calls `POST /v1/resolve/specs/from-upload` with the same delegation token and the file URL. The API fetches the file internally and processes it.
+    Your frontend calls `POST /v1/resolve/specs` with the file URL. The API fetches the file internally and processes it.
   </Step>
   <Step title="Receive enriched data">
     The API returns processed data directly in the response, including enriched line items and usage billing information.
