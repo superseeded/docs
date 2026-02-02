@@ -24,20 +24,20 @@ A **Platform** is a third-party integrator that wholesales the SuperSeeded AI AP
 
 ```mermaid
 sequenceDiagram
-    participant M as Merchant Frontend
-    participant P as Platform Backend
-    participant S as SuperSeeded API
-    participant U as Upload Service
-    
-    M->>P: Initiate upload
-    P->>S: POST /v1/auth/delegate-upload
-    S-->>P: JWT token
-    P-->>M: Pass token to frontend
-    M->>U: Upload file with JWT
-    U-->>M: Return file URL
-    M->>S: POST /v1/resolve/specs
-    S-->>M: Enriched data + usage
-    M-->>P: Forward results (optional)
+    participant F as Your Frontend
+    participant B as Your Backend
+    participant A as SuperSeeded API
+    participant T as TUS Server
+
+    F->>B: Initiate upload
+    B->>A: POST /v1/auth/delegate-upload
+    A-->>B: JWT token
+    B-->>F: Pass token to frontend
+    F->>T: Upload file with JWT
+    T-->>F: Return file URL
+    F->>A: POST /v1/resolve/specs
+    A-->>F: Enriched data + usage
+    F-->>B: Forward results (optional)
 ```
 
 ## How it works
