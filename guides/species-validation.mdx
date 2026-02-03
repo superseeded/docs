@@ -43,7 +43,7 @@ Results are automatically categorized by confidence level:
     Partial matches requiring human review. May be spelling variations or outdated names.
   </Card>
   <Card title="Invalid Matches" icon="x" color="#ef4444">
-    **<50% confidence**
+    **&lt;50% confidence**
 
     No valid matches found. These names likely need correction or verification.
   </Card>
@@ -112,7 +112,7 @@ const response = await fetch('/v1/validate/species', {
 For large datasets, batch processing is recommended:
 
 <Tabs>
-  <Tab title="Small Datasets (< 100 species)">
+  <Tab title="Small Datasets (&lt; 100 species)">
     ```json
     {
       "species_names": ["Species 1", "Species 2", "..."]
@@ -209,7 +209,7 @@ The API implements intelligent caching to improve performance:
 
 | Dataset Size | Processing Time | Recommended Method |
 |--------------|----------------|--------------------|
-| 1-10 species | < 1 second | Direct JSON |
+| 1-10 species | &lt; 1 second | Direct JSON |
 | 10-100 species | 1-5 seconds | Direct JSON or file |
 | 100+ species | 5-30 seconds | File upload |
 | 1000+ species | 30+ seconds | File upload with batching |

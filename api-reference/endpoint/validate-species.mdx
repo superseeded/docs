@@ -15,7 +15,7 @@ This endpoint validates plant species names using a two-stage process:
 Results are categorized by confidence level:
 - **Exact matches** (≥90%): High-quality matches ready to use
 - **Inexact matches** (50-89%): Partial matches requiring review
-- **Invalid matches** (<50%): No valid matches found
+- **Invalid matches** (&lt;50%): No valid matches found
 
 ## Input Options
 
@@ -42,7 +42,7 @@ For files uploaded via TUS protocol:
 
 ```bash
 curl -X POST https://api.superseeded.ai/v1/validate/species \
-  -H "Authorization: Bearer <delegation_token>" \
+  -H "Authorization: Bearer &lt;delegation_token&gt;" \
   -H "Content-Type: application/json" \
   -d '{
     "file_url": "https://secure.superseeded.ai/files/abc123",
@@ -155,7 +155,7 @@ curl -X POST https://api.superseeded.ai/v1/validate/species \
     </ResponseField>
 
     <ResponseField name="invalid" type="SpeciesNameMatch[]">
-      No valid matches found (score < 0.5).
+      No valid matches found (score &lt; 0.5).
     </ResponseField>
 
     <ResponseField name="total_processed" type="integer">
@@ -275,7 +275,7 @@ curl -X POST https://api.superseeded.ai/v1/validate/species \
 ### GBIF (Global Biodiversity Information Facility)
 - **Coverage**: Global biodiversity database
 - **Matching**: Exact canonical name matching
-- **Performance**: Fast (typically <100ms)
+- **Performance**: Fast (typically &lt;100ms)
 - **Cache**: 24 hours server-side
 
 ### TNRS (Taxonomic Name Resolution Service)
