@@ -23,6 +23,10 @@
       "description": "Endpoints for cleaning, normalizing, and interpreting messy nursery data."
     },
     {
+      "name": "Validation",
+      "description": "Endpoints for validating botanical species names against taxonomic databases."
+    },
+    {
       "name": "System",
       "description": "Health checks and service status."
     }
@@ -122,6 +126,54 @@
           },
           "403": {
             "description": "Forbidden - Invalid API Key."
+          }
+        }
+      }
+    },
+    "/validate/species": {
+      "post": {
+        "tags": ["Validation"],
+        "summary": "Validate Species Names",
+        "description": "Validate botanical species names against multiple taxonomic databases (GBIF, TNRS) with intelligent caching and confidence scoring. Accepts input as: (1) JSON body with species_names array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload. Results are categorized by confidence level: exact (≥90%), inexact (50-89%), and invalid (<50%).",
+        "operationId": "validateSpecies",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "description": "Object containing species names to validate or file reference.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSpeciesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful validation with categorized results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateSpeciesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input or no species names found."
+          },
+          "401": {
+            "description": "Unauthorized - Missing API Key."
+          },
+          "403": {
+            "description": "Forbidden - Invalid API Key or usage limit exceeded."
+          },
+          "500": {
+            "description": "Internal Server Error - Species validation failed."
           }
         }
       }
@@ -351,6 +403,197 @@
             "description": "User-friendly note explaining the pros/cons of this type.",
             "example": "Superior root structure; requires more frequent watering until planted."
           }
+        }
+      },
+      "ValidateSpeciesRequest": {
+        "type": "object",
+        "properties": {
+          "species_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of species names to validate",
+            "example": ["Eucalyptus globulus", "Acacia melanoxylon"]
+          },
+          "file_url": {
+            "type": "string",
+            "description": "URL to uploaded file containing species names",
+            "example": "https://secure.superseeded.ai/files/abc123"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original filename for context",
+            "example": "species_list.xlsx"
+          },
+          "extraction_column": {
+            "type": "string",
+            "description": "Column name containing species names",
+            "example": "Botanical Name"
+          },
+          "include_metadata": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include detailed taxonomic metadata"
+          },
+          "cache_results": {
+            "type": "boolean",
+            "default": true,
+            "description": "Cache results for future queries"
+          }
+        }
+      },
+      "ValidateSpeciesResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "$ref": "#/components/schemas/SpeciesValidationResult"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "input_count": {
+                "type": "integer",
+                "description": "Number of input species names"
+              },
+              "exact_matches": {
+                "type": "integer",
+                "description": "Count of exact matches"
+              },
+              "inexact_matches": {
+                "type": "integer",
+                "description": "Count of inexact matches"
+              },
+              "invalid_matches": {
+                "type": "integer",
+                "description": "Count of invalid matches"
+              },
+              "processing_time_seconds": {
+                "type": "number",
+                "description": "Processing time"
+              },
+              "sources_used": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Data sources used"
+              },
+              "cache_enabled": {
+                "type": "boolean",
+                "description": "Whether caching was enabled"
+              }
+            }
+          }
+        }
+      },
+      "SpeciesValidationResult": {
+        "type": "object",
+        "properties": {
+          "exact": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeciesNameMatch"
+            },
+            "description": "High confidence exact matches"
+          },
+          "inexact": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeciesNameMatch"
+            },
+            "description": "Partial matches requiring review"
+          },
+          "invalid": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeciesNameMatch"
+            },
+            "description": "No valid matches found"
+          },
+          "total_processed": {
+            "type": "integer",
+            "description": "Total number of species names processed"
+          },
+          "processing_time_seconds": {
+            "type": "number",
+            "description": "Time taken to process all names"
+          }
+        }
+      },
+      "SpeciesNameMatch": {
+        "type": "object",
+        "properties": {
+          "original": {
+            "type": "string",
+            "description": "Original species name provided"
+          },
+          "matched": {
+            "type": "string",
+            "description": "Matched canonical species name"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["gbif", "tnrs"],
+            "description": "Source of the match"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Match confidence score"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["exact", "inexact", "invalid"],
+            "description": "Categorical confidence level"
+          },
+          "author": {
+            "type": "string",
+            "description": "Taxonomic author"
+          },
+          "family": {
+            "type": "string",
+            "description": "Plant family"
+          },
+          "genus": {
+            "type": "string",
+            "description": "Genus name"
+          },
+          "rank": {
+            "type": "string",
+            "description": "Taxonomic rank"
+          },
+          "status": {
+            "type": "string",
+            "description": "Taxonomic status"
+          },
+          "url": {
+            "type": "string",
+            "description": "Reference URL"
+          },
+          "gbif_id": {
+            "type": "string",
+            "description": "GBIF taxon key"
+          },
+          "wfo_id": {
+            "type": "string",
+            "description": "World Flora Online ID"
+          }
+        },
+        "required": ["original", "confidence"],
+        "example": {
+          "original": "Eucalyptus globulus",
+          "matched": "Eucalyptus globulus",
+          "source": "gbif",
+          "score": 1.0,
+          "confidence": "exact",
+          "author": "Labill.",
+          "family": "Myrtaceae",
+          "genus": "Eucalyptus",
+          "rank": "species",
+          "status": "accepted",
+          "gbif_id": "3190653"
         }
       }
     },

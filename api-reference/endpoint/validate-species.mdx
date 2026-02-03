@@ -1,0 +1,338 @@
+---
+title: 'Validate Species Names'
+openapi: 'POST /validate/species'
+---
+
+Validate botanical species names against multiple taxonomic databases with intelligent caching and confidence scoring.
+
+## Overview
+
+This endpoint validates plant species names using a two-stage process:
+
+1. **GBIF Matching**: Fast exact matching against Global Biodiversity Information Facility
+2. **TNRS Matching**: Fuzzy matching via Taxonomic Name Resolution Service for unmatched names
+
+Results are categorized by confidence level:
+- **Exact matches** (≥90%): High-quality matches ready to use
+- **Inexact matches** (50-89%): Partial matches requiring review
+- **Invalid matches** (<50%): No valid matches found
+
+## Input Options
+
+This endpoint accepts input in three ways:
+
+### 1. JSON Body with Species Names Array
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/validate/species \
+  -H "X-API-Key: sk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "species_names": [
+      "Eucalyptus globulus",
+      "Acacia melanoxylon",
+      "Banksia integrifolia"
+    ]
+  }'
+```
+
+### 2. JSON Body with File URL (TUS Upload)
+
+For files uploaded via TUS protocol:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/validate/species \
+  -H "Authorization: Bearer <delegation_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_url": "https://secure.superseeded.ai/files/abc123",
+    "filename": "species_list.xlsx",
+    "extraction_column": "Botanical Name"
+  }'
+```
+
+### 3. Direct File Upload (Multipart)
+
+Upload files directly without TUS - reduces round trips for Basic/Pro plans:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/validate/species \
+  -H "X-API-Key: sk_..." \
+  -F "file=@plant_schedule.xlsx" \
+  -F "extraction_column=Species"
+```
+
+## Request Body (JSON)
+
+<ParamField body="species_names" type="string[]">
+  An array of species name strings to validate. Takes precedence over file inputs.
+</ParamField>
+
+<ParamField body="file_url" type="string">
+  URL to a previously uploaded file (from TUS storage). Must be from `secure.superseeded.ai` or `api.superseeded.ai`.
+</ParamField>
+
+<ParamField body="filename" type="string">
+  Original filename for context when using `file_url`. Helps with file format detection.
+</ParamField>
+
+<ParamField body="extraction_column" type="string">
+  Specific column name containing species names in spreadsheet files (e.g., "Species", "Botanical Name", "Scientific Name").
+</ParamField>
+
+<ParamField body="include_metadata" type="boolean" default="true">
+  Include detailed taxonomic metadata in results (author, family, status, URLs).
+</ParamField>
+
+<ParamField body="cache_results" type="boolean" default="true">
+  Cache validation results for future queries to improve performance.
+</ParamField>
+
+## Form Data (Multipart Upload)
+
+<ParamField body="file" type="file">
+  Direct file upload. Supports: JSON, XLSX, XLS, CSV, PDF, TXT.
+</ParamField>
+
+<ParamField body="extraction_column" type="string">
+  Column name containing species names for spreadsheet files.
+</ParamField>
+
+## Response
+
+<ResponseField name="results" type="object">
+  Categorized validation results.
+
+  <Expandable title="properties">
+    <ResponseField name="exact" type="SpeciesNameMatch[]">
+      High confidence exact matches (score ≥ 0.9).
+
+      <Expandable title="SpeciesNameMatch properties">
+        <ResponseField name="original" type="string">
+          Original species name provided.
+        </ResponseField>
+        <ResponseField name="matched" type="string">
+          Matched canonical species name.
+        </ResponseField>
+        <ResponseField name="source" type="string">
+          Source of the match: "gbif" or "tnrs".
+        </ResponseField>
+        <ResponseField name="score" type="number">
+          Match confidence score (0.0-1.0).
+        </ResponseField>
+        <ResponseField name="confidence" type="string">
+          Categorical confidence level: "exact", "inexact", or "invalid".
+        </ResponseField>
+        <ResponseField name="author" type="string">
+          Taxonomic author.
+        </ResponseField>
+        <ResponseField name="family" type="string">
+          Plant family.
+        </ResponseField>
+        <ResponseField name="genus" type="string">
+          Genus name.
+        </ResponseField>
+        <ResponseField name="rank" type="string">
+          Taxonomic rank (species, genus, etc.).
+        </ResponseField>
+        <ResponseField name="status" type="string">
+          Taxonomic status (accepted, synonym, etc.).
+        </ResponseField>
+        <ResponseField name="url" type="string">
+          Reference URL (World Flora Online, GBIF, etc.).
+        </ResponseField>
+        <ResponseField name="gbif_id" type="string">
+          GBIF taxon key.
+        </ResponseField>
+        <ResponseField name="wfo_id" type="string">
+          World Flora Online ID.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="inexact" type="SpeciesNameMatch[]">
+      Partial matches requiring review (score 0.5-0.9).
+    </ResponseField>
+
+    <ResponseField name="invalid" type="SpeciesNameMatch[]">
+      No valid matches found (score < 0.5).
+    </ResponseField>
+
+    <ResponseField name="total_processed" type="integer">
+      Total number of species names processed.
+    </ResponseField>
+
+    <ResponseField name="processing_time_seconds" type="number">
+      Time taken to process all names.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional processing metadata.
+
+  <Expandable title="properties">
+    <ResponseField name="input_count" type="integer">
+      Number of input species names.
+    </ResponseField>
+    <ResponseField name="exact_matches" type="integer">
+      Count of exact matches.
+    </ResponseField>
+    <ResponseField name="inexact_matches" type="integer">
+      Count of inexact matches.
+    </ResponseField>
+    <ResponseField name="invalid_matches" type="integer">
+      Count of invalid matches.
+    </ResponseField>
+    <ResponseField name="processing_time_seconds" type="number">
+      Processing time.
+    </ResponseField>
+    <ResponseField name="sources_used" type="string[]">
+      Data sources used: ["gbif", "tnrs"].
+    </ResponseField>
+    <ResponseField name="cache_enabled" type="boolean">
+      Whether caching was enabled.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "results": {
+    "exact": [
+      {
+        "original": "Eucalyptus globulus",
+        "matched": "Eucalyptus globulus",
+        "source": "gbif",
+        "score": 1.0,
+        "confidence": "exact",
+        "author": "Labill.",
+        "family": "Myrtaceae",
+        "genus": "Eucalyptus",
+        "rank": "species",
+        "status": "accepted",
+        "gbif_id": "3190653"
+      }
+    ],
+    "inexact": [
+      {
+        "original": "Acacia melanoxylon",
+        "matched": "Acacia melanoxylon",
+        "source": "tnrs",
+        "score": 0.85,
+        "confidence": "inexact",
+        "author": "R.Br.",
+        "family": "Fabaceae",
+        "status": "accepted",
+        "url": "http://www.worldfloraonline.org/taxon/wfo-0000123456"
+      }
+    ],
+    "invalid": [
+      {
+        "original": "Unknown species",
+        "confidence": "invalid"
+      }
+    ],
+    "total_processed": 3,
+    "processing_time_seconds": 1.234
+  },
+  "metadata": {
+    "input_count": 3,
+    "exact_matches": 1,
+    "inexact_matches": 1,
+    "invalid_matches": 1,
+    "processing_time_seconds": 1.234,
+    "sources_used": ["gbif", "tnrs"],
+    "cache_enabled": true
+  }
+}
+```
+
+## Authentication
+
+<ParamField header="X-API-Key" type="string">
+  Your API key for Basic/Pro plan authentication.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Bearer token for Teams plan platform integration.
+</ParamField>
+
+## Supported File Formats
+
+| Format | Extension | Description |
+|--------|-----------|-------------|
+| JSON | `.json` | Direct arrays of species names |
+| Excel | `.xlsx`, `.xls` | Spreadsheets with species columns |
+| CSV | `.csv` | Comma-separated values |
+| PDF | `.pdf` | Text extraction from documents |
+| Text | `.txt` | One species per line or comma-separated |
+
+## Data Sources
+
+### GBIF (Global Biodiversity Information Facility)
+- **Coverage**: Global biodiversity database
+- **Matching**: Exact canonical name matching
+- **Performance**: Fast (typically <100ms)
+- **Cache**: 24 hours server-side
+
+### TNRS (Taxonomic Name Resolution Service)
+- **Coverage**: World Flora Online (WFO) database
+- **Matching**: Fuzzy string matching with confidence scores
+- **Performance**: Slower (typically 1-3 seconds per batch)
+- **Cache**: 30 days in database
+
+## Performance Tips
+
+1. **Batch Processing**: Send multiple species names in a single request rather than individual requests
+2. **Enable Caching**: Keep `cache_results: true` (default) to benefit from cached results
+3. **File Processing**: For large datasets, upload files rather than sending large JSON payloads
+4. **Column Specification**: Specify `extraction_column` for faster spreadsheet processing
+
+## Error Handling
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 400 | Bad request (invalid input, missing species names) |
+| 401 | Unauthorized (invalid or missing API key) |
+| 403 | Forbidden (API key inactive, expired, or usage limit exceeded) |
+| 500 | Internal server error |
+
+Example error response:
+```json
+{
+  "detail": "No valid species names found in input"
+}
+```
+
+## Rate Limits
+
+- API usage is tracked per API key
+- Each species name processed counts as 1 usage unit
+- Rate limits vary by subscription plan
+- Batch processing is more efficient for large datasets
+
+## Use Cases
+
+### Plant Schedule Validation
+Perfect for validating botanical names in plant schedules before procurement:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/validate/species \
+  -H "X-API-Key: sk_..." \
+  -F "file=@landscape_plant_schedule.xlsx" \
+  -F "extraction_column=Botanical Name"
+```
+
+### Data Quality Assurance
+Identify questionable species names in botanical datasets:
+
+- **Exact matches**: Proceed with confidence
+- **Inexact matches**: Flag for expert review
+- **Invalid matches**: Require correction or removal
+
+### Taxonomic Standardization
+Standardize species names across different data sources using authoritative databases (GBIF, World Flora Online).

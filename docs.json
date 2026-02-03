@@ -35,7 +35,8 @@
           {
             "group": "Core Concepts",
             "pages": [
-              "guides/alignment"
+              "guides/alignment",
+              "guides/species-validation"
             ]
           }
         ]
@@ -54,6 +55,7 @@
             "pages": [
               "api-reference/endpoint/root",
               "api-reference/endpoint/resolve-specs",
+              "api-reference/endpoint/validate-species",
               "api-reference/endpoint/route-discovery"
             ]
           }

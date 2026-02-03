@@ -1,0 +1,257 @@
+---
+title: 'Species Name Validation'
+description: 'Validate botanical species names against authoritative taxonomic databases'
+---
+
+## Overview
+
+The Species Name Validation API helps ensure data quality in plant schedules and botanical datasets by validating species names against multiple authoritative databases. This is essential for:
+
+- **Plant schedule validation** before procurement
+- **Data quality assurance** in botanical datasets
+- **Taxonomic standardization** across different data sources
+- **Compliance verification** for landscape projects
+
+## How It Works
+
+### Two-Stage Validation Process
+
+The API uses a sophisticated two-stage validation process for optimal accuracy and performance:
+
+<Steps>
+  <Step title="GBIF Matching (Stage 1)">
+    Fast exact matching against the Global Biodiversity Information Facility database. This catches most common species names quickly.
+  </Step>
+  <Step title="TNRS Matching (Stage 2)">
+    For unmatched names, the Taxonomic Name Resolution Service provides fuzzy matching with confidence scores against World Flora Online.
+  </Step>
+</Steps>
+
+### Confidence Scoring
+
+Results are automatically categorized by confidence level:
+
+<CardGroup cols={3}>
+  <Card title="Exact Matches" icon="check" color="#10b981">
+    **≥90% confidence**
+
+    High-quality matches ready to use. These names are validated against authoritative sources.
+  </Card>
+  <Card title="Inexact Matches" icon="exclamation-triangle" color="#f59e0b">
+    **50-89% confidence**
+
+    Partial matches requiring human review. May be spelling variations or outdated names.
+  </Card>
+  <Card title="Invalid Matches" icon="x" color="#ef4444">
+    **<50% confidence**
+
+    No valid matches found. These names likely need correction or verification.
+  </Card>
+</CardGroup>
+
+## Common Use Cases
+
+### Plant Schedule Validation
+
+The most common use case is validating botanical names in plant schedules before procurement:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/validate/species \
+  -H "X-API-Key: sk_..." \
+  -F "file=@landscape_plant_schedule.xlsx" \
+  -F "extraction_column=Botanical Name"
+```
+
+This returns categorized results:
+- **Exact matches**: Proceed with confidence
+- **Inexact matches**: Flag for expert review
+- **Invalid matches**: Require correction before procurement
+
+### Data Quality Assurance
+
+For large botanical datasets, validation helps identify questionable entries:
+
+```json
+{
+  "species_names": [
+    "Eucalyptus globulus",     // ✅ Will match exactly
+    "Eucalyptus globular",     // ⚠️ Typo - will be flagged
+    "Unknown species xyz"      // ❌ Invalid - needs review
+  ]
+}
+```
+
+### Taxonomic Standardization
+
+Standardize species names across different data sources using authoritative databases:
+
+- **Input**: Various naming conventions, spellings, synonyms
+- **Output**: Standardized canonical names with full taxonomic metadata
+- **Benefit**: Consistent data across systems and teams
+
+## Integration Patterns
+
+### Frontend Integration
+
+The API implements the same validation logic as the SuperSeeded web application, ensuring consistent results:
+
+```javascript
+// Frontend useValidation composable (Nuxt app)
+const { nameStatus } = useValidation()
+await validateSpeciesNames(speciesNames)
+
+// API endpoint (same logic, different interface)
+const response = await fetch('/v1/validate/species', {
+  method: 'POST',
+  body: JSON.stringify({ species_names: speciesNames })
+})
+```
+
+### Batch Processing
+
+For large datasets, batch processing is recommended:
+
+<Tabs>
+  <Tab title="Small Datasets (< 100 species)">
+    ```json
+    {
+      "species_names": ["Species 1", "Species 2", "..."]
+    }
+    ```
+
+    Direct JSON submission for quick validation.
+  </Tab>
+  <Tab title="Large Datasets (100+ species)">
+    ```bash
+    curl -X POST https://api.superseeded.ai/v1/validate/species \
+      -H "X-API-Key: sk_..." \
+      -F "file=@large_species_list.xlsx"
+    ```
+
+    File upload for efficient batch processing.
+  </Tab>
+</Tabs>
+
+### Workflow Integration
+
+Common integration patterns in plant procurement workflows:
+
+<Steps>
+  <Step title="Upload Plant Schedule">
+    Designer uploads Excel/CSV file with botanical names.
+  </Step>
+  <Step title="Validate Species Names">
+    API processes the schedule and validates all botanical names.
+  </Step>
+  <Step title="Review Flagged Items">
+    System highlights inexact/invalid matches for expert review.
+  </Step>
+  <Step title="Proceed with Procurement">
+    Validated schedule proceeds to availability checking and procurement.
+  </Step>
+</Steps>
+
+## Data Sources & Quality
+
+### Primary Sources
+
+<CardGroup cols={2}>
+  <Card title="GBIF" icon="database" href="https://www.gbif.org">
+    **Global Biodiversity Information Facility**
+
+    - Global biodiversity database
+    - Exact canonical name matching
+    - Fast performance (~100ms)
+    - 24-hour server cache
+  </Card>
+  <Card title="TNRS" icon="search" href="https://tnrsapi.xyz">
+    **Taxonomic Name Resolution Service**
+
+    - World Flora Online database
+    - Fuzzy string matching
+    - Confidence scoring
+    - 30-day database cache
+  </Card>
+</CardGroup>
+
+### Caching Strategy
+
+The API implements intelligent caching to improve performance:
+
+- **TNRS results**: 30-day database cache (slower API)
+- **GBIF results**: 24-hour server cache (faster API)
+- **Cache benefits**: 70-90% reduction in external API calls
+- **Cache control**: Can be disabled per request if needed
+
+## Performance Optimization
+
+### Best Practices
+
+<AccordionGroup>
+  <Accordion title="Batch Processing">
+    Send multiple species names in a single request rather than individual requests. This is more efficient and reduces API call overhead.
+  </Accordion>
+
+  <Accordion title="Enable Caching">
+    Keep `cache_results: true` (default) to benefit from cached results. This dramatically improves performance for repeated queries.
+  </Accordion>
+
+  <Accordion title="File Processing">
+    For large datasets (100+ species), upload files rather than sending large JSON payloads. The API can efficiently extract species names from various file formats.
+  </Accordion>
+
+  <Accordion title="Column Specification">
+    When uploading spreadsheets, specify the column containing species names with `extraction_column` for faster processing.
+  </Accordion>
+</AccordionGroup>
+
+### Expected Performance
+
+| Dataset Size | Processing Time | Recommended Method |
+|--------------|----------------|--------------------|
+| 1-10 species | < 1 second | Direct JSON |
+| 10-100 species | 1-5 seconds | Direct JSON or file |
+| 100+ species | 5-30 seconds | File upload |
+| 1000+ species | 30+ seconds | File upload with batching |
+
+## Error Handling & Recovery
+
+### Common Scenarios
+
+<Warning>
+  **API Rate Limits**: Each species name counts as 1 usage unit. Monitor your usage to avoid hitting rate limits.
+</Warning>
+
+<Tip>
+  **Network Timeouts**: The API implements retry logic, but for very large datasets, consider splitting into smaller batches.
+</Tip>
+
+### Error Response Examples
+
+```json
+// No species names found
+{
+  "detail": "No valid species names found in input"
+}
+
+// Usage limit exceeded
+{
+  "detail": "API Key usage limit exceeded"
+}
+
+// Invalid file format
+{
+  "detail": "Unsupported file format. Please use: JSON, XLSX, CSV, PDF, or TXT"
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference/endpoint/validate-species">
+    Complete technical documentation with request/response schemas and examples.
+  </Card>
+  <Card title="Integration Examples" icon="puzzle-piece" href="/platform-integration/examples">
+    Code examples for common integration patterns and use cases.
+  </Card>
+</CardGroup>
