@@ -48,6 +48,8 @@ curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
 
 <ParamField body="file_url" type="string">
   URL to a previously uploaded file (from TUS storage). Must be from `secure.superseeded.ai` or `api.superseeded.ai`.
+
+  **Tip:** To test with a local file in this playground, switch the body content-type to `multipart/form-data` to use the file input dialog.
 </ParamField>
 
 <ParamField body="filename" type="string">

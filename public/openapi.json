@@ -167,6 +167,22 @@
               "schema": {
                 "$ref": "#/components/schemas/ValidateSpeciesRequest"
               }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File to upload. Supports: JSON, XLSX, XLS, CSV, PDF, TXT."
+                  },
+                  "extraction_column": {
+                    "type": "string",
+                    "description": "Column name containing species names for spreadsheet files."
+                  }
+                }
+              }
             }
           }
         },

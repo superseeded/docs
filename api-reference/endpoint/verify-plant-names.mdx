@@ -63,6 +63,8 @@ curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
 
 <ParamField body="file_url" type="string">
   URL to a previously uploaded file (from TUS storage). Names are pre-parsed via LLM.
+
+  **Tip:** To test with a local file in this playground, switch the body content-type to `multipart/form-data` to use the file input dialog.
 </ParamField>
 
 <ParamField body="filename" type="string">
