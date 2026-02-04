@@ -1,9 +1,9 @@
 ---
-title: 'Resolve Specs'
-openapi: 'POST /resolve/specs'
+title: 'Verify Pot Sizes'
+openapi: 'POST /verify/pot-sizes'
 ---
 
-Classify plant pot sizes and specifications into Growth Equivalent Hierarchy categories.
+Classify plant pot sizes and specifications using Growth Equivalent logic. Maps raw text labels to a stage of maturity (0-5) to determine if items are swappable.
 
 ## Input Options
 
@@ -12,7 +12,7 @@ This endpoint accepts input in three ways:
 ### 1. JSON Body with Items Array
 
 ```bash
-curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
   -H "X-API-Key: sk_..." \
   -H "Content-Type: application/json" \
   -d '{"items": ["400mm AS", "20L Planter Bag"]}'
@@ -23,7 +23,7 @@ curl -X POST https://api.superseeded.ai/v1/resolve/specs \
 For files uploaded via TUS protocol:
 
 ```bash
-curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
   -H "Authorization: Bearer <delegation_token>" \
   -H "Content-Type: application/json" \
   -d '{"file_url": "https://secure.superseeded.ai/files/abc123", "filename": "data.xlsx"}'
@@ -34,7 +34,7 @@ curl -X POST https://api.superseeded.ai/v1/resolve/specs \
 Upload files directly without TUS - reduces round trips for Basic/Pro plans:
 
 ```bash
-curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
   -H "X-API-Key: sk_..." \
   -F "file=@data.xlsx" \
   -F "extraction_type=pot_sizes"

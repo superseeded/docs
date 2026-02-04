@@ -1,0 +1,343 @@
+---
+title: 'Verify Plant Names'
+openapi: 'POST /verify/plant-names'
+---
+
+Validate botanical species names against 11 authoritative taxonomic databases with Gemini AI fallback. Returns unified taxonomic records with consensus scoring.
+
+## Overview
+
+This endpoint queries 11 botanical databases in parallel, consolidates results using a weighted consensus algorithm, and returns a unified taxonomic record per species. Names that no source can resolve are sent to Google Gemini AI as a corrective fallback.
+
+Sources queried: GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia.
+
+## Input Options
+
+This endpoint accepts input in three ways:
+
+### 1. JSON Body with Species Names Array
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
+  -H "X-API-Key: sk_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "species_names": [
+      "Eucalyptus globulus",
+      "Acacia melanoxylon",
+      "Banksia integrifolia"
+    ]
+  }'
+```
+
+### 2. JSON Body with File URL (TUS Upload)
+
+For files uploaded via TUS protocol. Names are pre-parsed by LLM, so no additional extraction is performed.
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
+  -H "Authorization: Bearer <delegation_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_url": "https://secure.superseeded.ai/files/abc123",
+    "filename": "species_list.xlsx"
+  }'
+```
+
+### 3. Direct File Upload (Multipart)
+
+Upload files directly without TUS:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
+  -H "X-API-Key: sk_..." \
+  -F "file=@plant_schedule.xlsx" \
+  -F "extraction_column=Species"
+```
+
+## Request Body (JSON)
+
+<ParamField body="species_names" type="string[]">
+  An array of species name strings to validate. Takes precedence over file inputs.
+</ParamField>
+
+<ParamField body="file_url" type="string">
+  URL to a previously uploaded file (from TUS storage). Names are pre-parsed via LLM.
+</ParamField>
+
+<ParamField body="filename" type="string">
+  Original filename for context when using `file_url`.
+</ParamField>
+
+<ParamField body="extraction_column" type="string">
+  Specific column name containing species names in spreadsheet files.
+</ParamField>
+
+<ParamField body="sources" type="string[]">
+  Specific sources to query. Defaults to all 11 non-Gemini sources. Gemini is always a fallback-only source.
+
+  Available: `gbif`, `tnrs`, `powo`, `inaturalist`, `eol`, `ala`, `ip_australia`, `upov`, `wikispecies`, `wikidata`, `wikipedia`
+</ParamField>
+
+<ParamField body="include_metadata" type="boolean" default="true">
+  Include detailed taxonomic metadata in results.
+</ParamField>
+
+<ParamField body="cache_results" type="boolean" default="true">
+  Cache validation results for future queries.
+</ParamField>
+
+## Form Data (Multipart Upload)
+
+<ParamField body="file" type="file">
+  Direct file upload. Supports: JSON, XLSX, XLS, CSV, PDF, TXT.
+</ParamField>
+
+<ParamField body="extraction_column" type="string">
+  Column name containing species names for spreadsheet files.
+</ParamField>
+
+## Response
+
+The response contains an array of unified taxonomic records and a summary.
+
+<ResponseField name="results" type="object[]">
+  Array of unified taxonomic records, one per species name.
+
+  <Expandable title="Unified Taxonomic Record">
+    <ResponseField name="query" type="object">
+      Query information.
+
+      <Expandable title="properties">
+        <ResponseField name="submitted_name" type="string">
+          Original species name as submitted.
+        </ResponseField>
+        <ResponseField name="normalized_name" type="string">
+          Lowercase, trimmed version used for matching.
+        </ResponseField>
+        <ResponseField name="query_timestamp" type="string">
+          ISO 8601 timestamp of the query.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="validation" type="object">
+      Validation status and confidence scoring.
+
+      <Expandable title="properties">
+        <ResponseField name="status" type="string">
+          Validation result: `validated`, `uncertain`, or `not_found`.
+        </ResponseField>
+        <ResponseField name="confidence" type="string">
+          Confidence level: `high`, `medium`, or `low`.
+        </ResponseField>
+        <ResponseField name="consensus_score" type="number">
+          0.0-1.0 score based on source agreement.
+        </ResponseField>
+        <ResponseField name="sources_checked" type="integer">
+          Number of sources that returned results.
+        </ResponseField>
+        <ResponseField name="sources_matched" type="integer">
+          Number of sources with a match.
+        </ResponseField>
+        <ResponseField name="match_summary" type="object">
+          Counts of exact_matches, inexact_matches, no_match.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="accepted_name" type="object">
+      The determined correct scientific name.
+
+      <Expandable title="properties">
+        <ResponseField name="scientific_name" type="string">
+          Accepted scientific name determined by weighted consensus.
+        </ResponseField>
+        <ResponseField name="author" type="string">
+          Taxonomic author (e.g. "Labill.").
+        </ResponseField>
+        <ResponseField name="nomenclatural_status" type="string">
+          `accepted`, `synonym`, `unresolved`, or `not_found`.
+        </ResponseField>
+        <ResponseField name="common_names" type="object[]">
+          Common names with language and region.
+        </ResponseField>
+        <ResponseField name="taxonomic_rank" type="string">
+          Rank: species, subspecies, variety, etc.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="taxonomy" type="object">
+      Complete taxonomic classification.
+
+      <Expandable title="properties">
+        <ResponseField name="kingdom" type="string">Always "Plantae".</ResponseField>
+        <ResponseField name="family" type="string">Plant family (e.g. "Myrtaceae").</ResponseField>
+        <ResponseField name="genus" type="string">Genus name.</ResponseField>
+        <ResponseField name="species" type="string">Species epithet.</ResponseField>
+        <ResponseField name="subspecies" type="string">Subspecies if applicable.</ResponseField>
+        <ResponseField name="variety" type="string">Variety if applicable.</ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="cross_references" type="object">
+      Database IDs for deep linking.
+
+      <Expandable title="properties">
+        <ResponseField name="gbif_id" type="string">GBIF taxon key.</ResponseField>
+        <ResponseField name="wfo_id" type="string">World Flora Online ID.</ResponseField>
+        <ResponseField name="powo_id" type="string">Plants of the World Online ID.</ResponseField>
+        <ResponseField name="eol_id" type="string">Encyclopedia of Life page ID.</ResponseField>
+        <ResponseField name="ala_guid" type="string">Atlas of Living Australia GUID.</ResponseField>
+        <ResponseField name="wikidata_id" type="string">Wikidata entity ID.</ResponseField>
+        <ResponseField name="inaturalist_taxon_id" type="string">iNaturalist taxon ID.</ResponseField>
+        <ResponseField name="pbr_numbers" type="string[]">IP Australia PBR identifiers.</ResponseField>
+        <ResponseField name="upov_code" type="string">UPOV variety code.</ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="metadata" type="object">
+      Processing metadata.
+
+      <Expandable title="properties">
+        <ResponseField name="quality_score" type="number">Overall data quality (0.0-1.0).</ResponseField>
+        <ResponseField name="api_version" type="string">API version.</ResponseField>
+        <ResponseField name="processing_time_seconds" type="number">Processing time.</ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="warnings" type="string[]">
+      Any data quality warnings or conflicts.
+    </ResponseField>
+
+    <ResponseField name="notes" type="string[]">
+      Informational notes about validation.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  Batch validation summary.
+
+  <Expandable title="properties">
+    <ResponseField name="total" type="integer">Total species processed.</ResponseField>
+    <ResponseField name="validated" type="integer">Count with validated status.</ResponseField>
+    <ResponseField name="uncertain" type="integer">Count with uncertain status.</ResponseField>
+    <ResponseField name="not_found" type="integer">Count with not_found status.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "results": [
+    {
+      "query": {
+        "submitted_name": "Eucalyptus globulus",
+        "normalized_name": "eucalyptus globulus",
+        "query_timestamp": "2025-01-15T10:30:00Z"
+      },
+      "validation": {
+        "status": "validated",
+        "confidence": "high",
+        "consensus_score": 0.98,
+        "sources_checked": 11,
+        "sources_matched": 9,
+        "match_summary": {
+          "exact_matches": 8,
+          "inexact_matches": 1,
+          "no_match": 0
+        }
+      },
+      "accepted_name": {
+        "scientific_name": "Eucalyptus globulus",
+        "author": "Labill.",
+        "nomenclatural_status": "accepted",
+        "common_names": [
+          {
+            "name": "Tasmanian Blue Gum",
+            "language": "en",
+            "region": "Global"
+          }
+        ],
+        "taxonomic_rank": "species"
+      },
+      "taxonomy": {
+        "kingdom": "Plantae",
+        "family": "Myrtaceae",
+        "genus": "Eucalyptus",
+        "species": "globulus",
+        "subspecies": null,
+        "variety": null
+      },
+      "cross_references": {
+        "gbif_id": "3176787",
+        "wfo_id": "946382",
+        "powo_id": "urn:lsid:ipni.org:names:30001419-2",
+        "eol_id": "301421",
+        "ala_guid": "https://id.biodiversity.org.au/taxon/apni/51440555",
+        "wikidata_id": "Q159528",
+        "inaturalist_taxon_id": "53398",
+        "pbr_numbers": ["1990/106"],
+        "upov_code": "EUCAL_GLO"
+      },
+      "metadata": {
+        "version": "1.0",
+        "api_version": "1.0.0",
+        "quality_score": 0.9,
+        "processing_time_seconds": 4.67
+      },
+      "warnings": [],
+      "notes": [
+        "Name validated against 9 authoritative botanical databases",
+        "Confirmed by: Taxonomic Name Resolution Service (WFO), Plants of the World Online (Kew Gardens), Global Biodiversity Information Facility"
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "validated": 1,
+    "uncertain": 0,
+    "not_found": 0
+  }
+}
+```
+
+## Authentication
+
+<ParamField header="X-API-Key" type="string">
+  Your API key for Basic/Pro plan authentication.
+</ParamField>
+
+<ParamField header="Authorization" type="string">
+  Bearer token for Teams plan platform integration.
+</ParamField>
+
+## Supported File Formats
+
+| Format | Extension | Description |
+|--------|-----------|-------------|
+| JSON | `.json` | Direct arrays of species names |
+| Excel | `.xlsx`, `.xls` | Spreadsheets with species columns |
+| CSV | `.csv` | Comma-separated values |
+| PDF | `.pdf` | Text extraction from documents |
+| Text | `.txt` | One species per line or comma-separated |
+
+## Error Handling
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 400 | Bad request (invalid input, missing species names, invalid source) |
+| 401 | Unauthorized (invalid or missing API key) |
+| 403 | Forbidden (API key inactive, expired, or usage limit exceeded) |
+| 500 | Internal server error |
+
+## Rate Limits
+
+- API usage is tracked per API key
+- Each species name processed counts as 1 usage unit
+- Rate limits vary by subscription plan
+- Batch processing is more efficient for large datasets

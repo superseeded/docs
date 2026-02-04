@@ -62,13 +62,13 @@ def get_upload_token(merchant_id: str, platform_api_key: str) -> str:
 
 ### Call Resolve Specs
 
-After a successful upload, call the resolve-specs endpoint with the delegation token and file URL to process the file and retrieve enriched data.
+After a successful upload, call the validate-pot-sizes endpoint with the delegation token and file URL to process the file and retrieve enriched data.
 
 <CodeGroup>
 
-```javascript resolve-specs.js
-async function resolveSpecs(delegationToken, fileUrl) {
-  const response = await fetch('https://api.superseeded.ai/v1/resolve/specs', {
+```javascript validate-pot-sizes.js
+async function validatePotSizes(delegationToken, fileUrl) {
+  const response = await fetch('https://api.superseeded.ai/v1/verify/pot-sizes', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${delegationToken}`, // Same token used for upload
@@ -96,9 +96,9 @@ async function resolveSpecs(delegationToken, fileUrl) {
 ```python resolve-specs.py
 import requests
 
-def resolve_specs(delegation_token: str, file_url: str) -> dict:
+def validate_pot_sizes(delegation_token: str, file_url: str) -> dict:
     response = requests.post(
-        'https://api.superseeded.ai/v1/resolve/specs',
+        'https://api.superseeded.ai/v1/verify/pot-sizes',
         headers={
             'Authorization': f'Bearer {delegation_token}',  # Same token used for upload
             'Content-Type': 'application/json'
@@ -179,8 +179,8 @@ async function completeUploadFlow(merchantId, file) {
   // 3. Get the file URL from the upload result
   const fileUrl = uploadResult.successful[0].uploadURL;
   
-  // 4. Call resolve-specs with the same delegation token and file URL
-  const response = await fetch('https://api.superseeded.ai/v1/resolve/specs', {
+  // 4. Call validate-pot-sizes with the same delegation token and file URL
+  const response = await fetch('https://api.superseeded.ai/v1/verify/pot-sizes', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`, // Same token used for upload

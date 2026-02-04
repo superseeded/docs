@@ -85,7 +85,7 @@
         }
       }
     },
-    "/resolve/specs": {
+    "/verify/pot-sizes": {
       "post": {
         "tags": ["Resolvers"],
         "summary": "Resolve Specs",
@@ -97,12 +97,30 @@
           }
         ],
         "requestBody": {
-          "description": "Object containing a list of raw spec strings to be resolved.",
+          "description": "Object containing a list of raw spec strings to be resolved, file reference, or direct file upload.",
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ResolveSpecsRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File to upload. Supported formats: JSON, XLSX, XLS, PDF, TXT, PNG, JPG, JPEG, GIF, WEBP."
+                  },
+                  "extraction_type": {
+                    "type": "string",
+                    "default": "pot_sizes",
+                    "enum": ["pot_sizes", "species", "generic"],
+                    "description": "What to extract from the file."
+                  }
+                }
               }
             }
           }
@@ -130,12 +148,12 @@
         }
       }
     },
-    "/validate/species": {
+    "/verify/plant-names": {
       "post": {
         "tags": ["Validation"],
-        "summary": "Validate Species Names",
-        "description": "Validate botanical species names against multiple taxonomic databases (GBIF, TNRS) with intelligent caching and confidence scoring. Accepts input as: (1) JSON body with species_names array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload. Results are categorized by confidence level: exact (≥90%), inexact (50-89%), and invalid (<50%).",
-        "operationId": "validateSpecies",
+        "summary": "Verify Plant Names",
+        "description": "Validate botanical species names against 11 authoritative taxonomic databases with AI fallback. Queries GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, and Wikipedia in parallel. Returns unified taxonomic records with consensus scoring. Accepts input as: (1) JSON body with species_names array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload.",
+        "operationId": "verifyPlantNames",
         "security": [
           {
             "ApiKeyAuth": []
@@ -154,7 +172,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successful validation with categorized results.",
+            "description": "Successful validation with unified taxonomic records.",
             "content": {
               "application/json": {
                 "schema": {
@@ -174,6 +192,26 @@
           },
           "500": {
             "description": "Internal Server Error - Species validation failed."
+          }
+        }
+      }
+    },
+    "/sources/taxonomic": {
+      "get": {
+        "tags": ["Validation"],
+        "summary": "List Taxonomic Sources",
+        "description": "Returns metadata about all 12 taxonomic data sources used by the species validation system, including authority weights and cache durations. No authentication required.",
+        "operationId": "listTaxonomicSources",
+        "responses": {
+          "200": {
+            "description": "List of taxonomic sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaxonomicSourcesResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -203,7 +241,7 @@
               "id": "resolve-specs",
               "name": "Resolve Specifications",
               "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
-              "endpoint": "/v1/resolve/specs",
+              "endpoint": "/v1/verify/pot-sizes",
               "method": "POST",
               "requires_auth": true,
               "accepted_file_types": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"],
@@ -234,7 +272,7 @@
           "endpoint": {
             "type": "string",
             "description": "Full API endpoint path",
-            "example": "/v1/resolve/specs"
+            "example": "/v1/verify/pot-sizes"
           },
           "method": {
             "type": "string",
@@ -263,7 +301,7 @@
       },
       "ResolveSpecsRequest": {
         "type": "object",
-        "description": "Request body for /resolve/specs. Accepts items array, file_url, or multipart file upload.",
+        "description": "Request body for /verify/pot-sizes. Accepts items array, file_url, or multipart file upload.",
         "properties": {
           "items": {
             "type": "array",
@@ -428,8 +466,17 @@
           },
           "extraction_column": {
             "type": "string",
-            "description": "Column name containing species names",
+            "description": "Column name containing species names in spreadsheet files",
             "example": "Botanical Name"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["gbif", "tnrs", "powo", "inaturalist", "eol", "ala", "ip_australia", "upov", "wikispecies", "wikidata", "wikipedia"]
+            },
+            "description": "Specific sources to query. Defaults to all 11 sources (excludes gemini AI fallback). Gemini is only used when all other sources return no match.",
+            "example": ["gbif", "tnrs", "powo"]
           },
           "include_metadata": {
             "type": "boolean",
@@ -447,153 +494,363 @@
         "type": "object",
         "properties": {
           "results": {
-            "$ref": "#/components/schemas/SpeciesValidationResult"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnifiedTaxonomicRecord"
+            },
+            "description": "Array of unified taxonomic records, one per species"
           },
-          "metadata": {
+          "summary": {
             "type": "object",
             "properties": {
-              "input_count": {
+              "total": {
                 "type": "integer",
-                "description": "Number of input species names"
+                "description": "Total species processed"
               },
-              "exact_matches": {
+              "validated": {
                 "type": "integer",
-                "description": "Count of exact matches"
+                "description": "Count with validated status (high confidence)"
               },
-              "inexact_matches": {
+              "uncertain": {
                 "type": "integer",
-                "description": "Count of inexact matches"
+                "description": "Count with uncertain status (requires review)"
               },
-              "invalid_matches": {
+              "not_found": {
                 "type": "integer",
-                "description": "Count of invalid matches"
-              },
-              "processing_time_seconds": {
-                "type": "number",
-                "description": "Processing time"
-              },
-              "sources_used": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Data sources used"
-              },
-              "cache_enabled": {
-                "type": "boolean",
-                "description": "Whether caching was enabled"
+                "description": "Count with not_found status"
               }
             }
           }
         }
       },
-      "SpeciesValidationResult": {
+      "TaxonomicSourcesResponse": {
         "type": "object",
         "properties": {
-          "exact": {
+          "sources": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SpeciesNameMatch"
-            },
-            "description": "High confidence exact matches"
+              "$ref": "#/components/schemas/TaxonomicSource"
+            }
           },
-          "inexact": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SpeciesNameMatch"
-            },
-            "description": "Partial matches requiring review"
-          },
-          "invalid": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SpeciesNameMatch"
-            },
-            "description": "No valid matches found"
-          },
-          "total_processed": {
+          "total": {
             "type": "integer",
-            "description": "Total number of species names processed"
-          },
-          "processing_time_seconds": {
-            "type": "number",
-            "description": "Time taken to process all names"
+            "description": "Total number of available sources"
           }
+        },
+        "example": {
+          "sources": [
+            {
+              "id": "tnrs",
+              "name": "Taxonomic Name Resolution Service (WFO)",
+              "description": "World Flora Online taxonomic authority",
+              "authority_weight": 1.0,
+              "cache_ttl_hours": 720
+            }
+          ],
+          "total": 12
         }
       },
-      "SpeciesNameMatch": {
+      "TaxonomicSource": {
         "type": "object",
         "properties": {
-          "original": {
+          "id": {
             "type": "string",
-            "description": "Original species name provided"
+            "description": "Source identifier"
           },
-          "matched": {
+          "name": {
             "type": "string",
-            "description": "Matched canonical species name"
+            "description": "Human-readable source name"
           },
-          "source": {
+          "description": {
             "type": "string",
-            "enum": ["gbif", "tnrs"],
-            "description": "Source of the match"
+            "description": "Brief description of the source"
           },
-          "score": {
+          "authority_weight": {
             "type": "number",
             "minimum": 0.0,
             "maximum": 1.0,
-            "description": "Match confidence score"
+            "description": "Weight in consensus algorithm"
           },
-          "confidence": {
-            "type": "string",
-            "enum": ["exact", "inexact", "invalid"],
-            "description": "Categorical confidence level"
+          "cache_ttl_hours": {
+            "type": "integer",
+            "description": "Cache duration in hours"
           },
-          "author": {
-            "type": "string",
-            "description": "Taxonomic author"
+          "fallback_only": {
+            "type": "boolean",
+            "description": "If true, only used when all other sources return no match (Gemini AI only)"
+          }
+        }
+      },
+      "UnifiedTaxonomicRecord": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "object",
+            "properties": {
+              "submitted_name": {
+                "type": "string",
+                "description": "Original species name as submitted"
+              },
+              "normalized_name": {
+                "type": "string",
+                "description": "Lowercase, trimmed version used for matching"
+              },
+              "query_timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp of the query"
+              }
+            }
           },
-          "family": {
-            "type": "string",
-            "description": "Plant family"
+          "validation": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["validated", "uncertain", "not_found"],
+                "description": "Validation result"
+              },
+              "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "Confidence level"
+              },
+              "consensus_score": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "0.0-1.0 score based on source agreement"
+              },
+              "sources_checked": {
+                "type": "integer",
+                "description": "Number of sources that returned results"
+              },
+              "sources_matched": {
+                "type": "integer",
+                "description": "Number of sources with a match"
+              },
+              "match_summary": {
+                "type": "object",
+                "properties": {
+                  "exact_matches": {
+                    "type": "integer"
+                  },
+                  "inexact_matches": {
+                    "type": "integer"
+                  },
+                  "no_match": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
           },
-          "genus": {
-            "type": "string",
-            "description": "Genus name"
+          "accepted_name": {
+            "type": "object",
+            "properties": {
+              "scientific_name": {
+                "type": "string",
+                "description": "Accepted scientific name determined by consensus"
+              },
+              "author": {
+                "type": "string",
+                "description": "Taxonomic author"
+              },
+              "nomenclatural_status": {
+                "type": "string",
+                "enum": ["accepted", "synonym", "unresolved", "not_found"],
+                "description": "Nomenclatural status"
+              },
+              "common_names": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "language": {
+                      "type": "string"
+                    },
+                    "region": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "taxonomic_rank": {
+                "type": "string",
+                "description": "Rank: species, subspecies, variety, etc."
+              }
+            }
           },
-          "rank": {
-            "type": "string",
-            "description": "Taxonomic rank"
+          "taxonomy": {
+            "type": "object",
+            "properties": {
+              "kingdom": {
+                "type": "string",
+                "example": "Plantae"
+              },
+              "family": {
+                "type": "string",
+                "description": "Plant family"
+              },
+              "genus": {
+                "type": "string",
+                "description": "Genus name"
+              },
+              "species": {
+                "type": "string",
+                "description": "Species epithet"
+              },
+              "subspecies": {
+                "type": "string",
+                "nullable": true
+              },
+              "variety": {
+                "type": "string",
+                "nullable": true
+              }
+            }
           },
-          "status": {
-            "type": "string",
-            "description": "Taxonomic status"
+          "cross_references": {
+            "type": "object",
+            "properties": {
+              "gbif_id": {
+                "type": "string",
+                "description": "GBIF taxon key"
+              },
+              "wfo_id": {
+                "type": "string",
+                "description": "World Flora Online ID"
+              },
+              "powo_id": {
+                "type": "string",
+                "description": "Plants of the World Online ID"
+              },
+              "eol_id": {
+                "type": "string",
+                "description": "Encyclopedia of Life page ID"
+              },
+              "ala_guid": {
+                "type": "string",
+                "description": "Atlas of Living Australia GUID"
+              },
+              "wikidata_id": {
+                "type": "string",
+                "description": "Wikidata entity ID"
+              },
+              "inaturalist_taxon_id": {
+                "type": "string",
+                "description": "iNaturalist taxon ID"
+              },
+              "pbr_numbers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "IP Australia PBR identifiers"
+              },
+              "upov_code": {
+                "type": "string",
+                "description": "UPOV variety code"
+              }
+            }
           },
-          "url": {
-            "type": "string",
-            "description": "Reference URL"
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "quality_score": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "Overall data quality score"
+              },
+              "api_version": {
+                "type": "string",
+                "description": "API version"
+              },
+              "processing_time_seconds": {
+                "type": "number",
+                "description": "Processing time"
+              }
+            }
           },
-          "gbif_id": {
-            "type": "string",
-            "description": "GBIF taxon key"
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Data quality warnings or conflicts"
           },
-          "wfo_id": {
-            "type": "string",
-            "description": "World Flora Online ID"
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Informational notes about validation"
           }
         },
-        "required": ["original", "confidence"],
         "example": {
-          "original": "Eucalyptus globulus",
-          "matched": "Eucalyptus globulus",
-          "source": "gbif",
-          "score": 1.0,
-          "confidence": "exact",
-          "author": "Labill.",
-          "family": "Myrtaceae",
-          "genus": "Eucalyptus",
-          "rank": "species",
-          "status": "accepted",
-          "gbif_id": "3190653"
+          "query": {
+            "submitted_name": "Eucalyptus globulus",
+            "normalized_name": "eucalyptus globulus",
+            "query_timestamp": "2025-01-15T10:30:00Z"
+          },
+          "validation": {
+            "status": "validated",
+            "confidence": "high",
+            "consensus_score": 0.98,
+            "sources_checked": 11,
+            "sources_matched": 9,
+            "match_summary": {
+              "exact_matches": 8,
+              "inexact_matches": 1,
+              "no_match": 0
+            }
+          },
+          "accepted_name": {
+            "scientific_name": "Eucalyptus globulus",
+            "author": "Labill.",
+            "nomenclatural_status": "accepted",
+            "common_names": [
+              {
+                "name": "Tasmanian Blue Gum",
+                "language": "en",
+                "region": "Global"
+              }
+            ],
+            "taxonomic_rank": "species"
+          },
+          "taxonomy": {
+            "kingdom": "Plantae",
+            "family": "Myrtaceae",
+            "genus": "Eucalyptus",
+            "species": "globulus",
+            "subspecies": null,
+            "variety": null
+          },
+          "cross_references": {
+            "gbif_id": "3176787",
+            "wfo_id": "946382",
+            "powo_id": "urn:lsid:ipni.org:names:30001419-2",
+            "eol_id": "301421",
+            "ala_guid": "https://id.biodiversity.org.au/taxon/apni/51440555",
+            "wikidata_id": "Q159528",
+            "inaturalist_taxon_id": "53398",
+            "pbr_numbers": ["1990/106"],
+            "upov_code": "EUCAL_GLO"
+          },
+          "metadata": {
+            "quality_score": 0.9,
+            "api_version": "1.0.0",
+            "processing_time_seconds": 4.67
+          },
+          "warnings": [],
+          "notes": [
+            "Name validated against 9 authoritative botanical databases",
+            "Confirmed by: Taxonomic Name Resolution Service (WFO), Plants of the World Online (Kew Gardens), Global Biodiversity Information Facility"
+          ]
         }
       }
     },

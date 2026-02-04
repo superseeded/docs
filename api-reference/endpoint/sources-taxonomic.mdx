@@ -1,0 +1,174 @@
+---
+title: 'Taxonomic Sources'
+openapi: 'GET /sources/taxonomic'
+---
+
+List all available taxonomic data sources used by the species validation system, including their authority weights and cache durations.
+
+## Overview
+
+This endpoint returns metadata about the 12 taxonomic sources used by the `/v1/verify/plant-names` endpoint. Use it to understand which databases are queried, their relative authority in the consensus algorithm, and how long results are cached.
+
+## Request
+
+```bash
+curl https://api.superseeded.ai/v1/sources/taxonomic
+```
+
+No authentication or request body required.
+
+## Response
+
+<ResponseField name="sources" type="object[]">
+  Array of source metadata objects.
+
+  <Expandable title="Source Object">
+    <ResponseField name="id" type="string">
+      Source identifier used in the `sources` filter parameter of `/v1/verify/plant-names`.
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Human-readable source name.
+    </ResponseField>
+    <ResponseField name="description" type="string">
+      Brief description of the source.
+    </ResponseField>
+    <ResponseField name="authority_weight" type="number">
+      Weight (0.0-1.0) used in the consensus scoring algorithm. Higher values indicate more authoritative sources.
+    </ResponseField>
+    <ResponseField name="cache_ttl_hours" type="integer">
+      How long results from this source are cached, in hours.
+    </ResponseField>
+    <ResponseField name="fallback_only" type="boolean">
+      If `true`, this source is only queried when all other sources return no match. Only applies to Gemini AI.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  Total number of available sources.
+</ResponseField>
+
+## Example Response
+
+```json
+{
+  "sources": [
+    {
+      "id": "tnrs",
+      "name": "Taxonomic Name Resolution Service (WFO)",
+      "description": "World Flora Online taxonomic authority",
+      "authority_weight": 1.0,
+      "cache_ttl_hours": 720
+    },
+    {
+      "id": "powo",
+      "name": "Plants of the World Online",
+      "description": "Royal Botanic Gardens, Kew",
+      "authority_weight": 0.95,
+      "cache_ttl_hours": 72
+    },
+    {
+      "id": "gbif",
+      "name": "Global Biodiversity Information Facility",
+      "description": "Largest biodiversity database",
+      "authority_weight": 0.85,
+      "cache_ttl_hours": 24
+    },
+    {
+      "id": "ala",
+      "name": "Atlas of Living Australia",
+      "description": "Australian biodiversity data",
+      "authority_weight": 0.8,
+      "cache_ttl_hours": 72
+    },
+    {
+      "id": "inaturalist",
+      "name": "iNaturalist",
+      "description": "Community science observations",
+      "authority_weight": 0.7,
+      "cache_ttl_hours": 48
+    },
+    {
+      "id": "ip_australia",
+      "name": "IP Australia Plant Breeders Rights",
+      "description": "Australian plant variety protection",
+      "authority_weight": 0.75,
+      "cache_ttl_hours": 168
+    },
+    {
+      "id": "upov",
+      "name": "UPOV Plant Variety Database",
+      "description": "International plant variety protection",
+      "authority_weight": 0.75,
+      "cache_ttl_hours": 168
+    },
+    {
+      "id": "eol",
+      "name": "Encyclopedia of Life",
+      "description": "Comprehensive species information",
+      "authority_weight": 0.6,
+      "cache_ttl_hours": 72
+    },
+    {
+      "id": "wikidata",
+      "name": "Wikidata",
+      "description": "Structured knowledge base",
+      "authority_weight": 0.65,
+      "cache_ttl_hours": 168
+    },
+    {
+      "id": "wikispecies",
+      "name": "WikiSpecies",
+      "description": "Wikimedia species directory",
+      "authority_weight": 0.6,
+      "cache_ttl_hours": 168
+    },
+    {
+      "id": "wikipedia",
+      "name": "Wikipedia",
+      "description": "General encyclopedia",
+      "authority_weight": 0.55,
+      "cache_ttl_hours": 168
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini AI",
+      "description": "AI-powered fallback for unresolvable names (requires API key)",
+      "authority_weight": 0.5,
+      "cache_ttl_hours": 240,
+      "fallback_only": true
+    }
+  ],
+  "total": 12
+}
+```
+
+## Source Authority Weights
+
+Sources are ranked by authority in the consensus algorithm:
+
+| Source | Weight | Role |
+|--------|--------|------|
+| TNRS (WFO) | 1.00 | Taxonomic authority |
+| POWO (Kew) | 0.95 | Botanical authority |
+| GBIF | 0.85 | Biodiversity database |
+| ALA | 0.80 | Regional authority (AU) |
+| IP Australia | 0.75 | Cultivar authority |
+| UPOV | 0.75 | Variety authority |
+| iNaturalist | 0.70 | Observations |
+| Wikidata | 0.65 | Structured data |
+| WikiSpecies | 0.60 | Species directory |
+| EOL | 0.60 | Encyclopedia |
+| Wikipedia | 0.55 | General reference |
+| Gemini AI | 0.50 | AI fallback (only) |
+
+## Cache Strategy
+
+Each source has a cache TTL tuned to its update frequency:
+
+- **24 hours**: GBIF (observation data updates frequently)
+- **48 hours**: iNaturalist (observation counts change regularly)
+- **72 hours**: POWO, ALA, EOL (taxonomy relatively stable)
+- **7 days**: IP Australia, UPOV, WikiSpecies, Wikidata, Wikipedia (data changes infrequently)
+- **10 days**: Gemini AI (AI-generated data, stable period)
+- **30 days**: TNRS/WFO (authoritative taxonomy, changes rarely)

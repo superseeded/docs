@@ -54,8 +54,9 @@
             "group": "Endpoints",
             "pages": [
               "api-reference/endpoint/root",
-              "api-reference/endpoint/resolve-specs",
-              "api-reference/endpoint/validate-species",
+              "api-reference/endpoint/verify-pot-sizes",
+              "api-reference/endpoint/verify-plant-names",
+              "api-reference/endpoint/sources-taxonomic",
               "api-reference/endpoint/route-discovery"
             ]
           }

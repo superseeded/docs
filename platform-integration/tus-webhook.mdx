@@ -1,17 +1,15 @@
 ---
-title: "Resolve Specs from Upload"
-description: "Process uploaded files and get enriched plant specifications"
+title: "Process from Upload"
+description: "Call API endpoints after file upload with delegation tokens"
 ---
 
 ## Overview
 
-After uploading a file via TUS, call this endpoint to process the file and receive enriched plant specification data. The same delegation token used for the upload authenticates this request.
+After uploading a file via TUS, you can call any API endpoint that supports post-upload processing. The same delegation token used for the upload authenticates the processing request.
 
 <Info>
-  This endpoint replaces the previous webhook-based flow. Your frontend now calls this endpoint directly after upload, giving you immediate control over when processing occurs.
+  This endpoint pattern replaces the previous webhook-based flow. Your frontend now calls processing endpoints directly after upload, giving you immediate control over when processing occurs.
 </Info>
-
-**Endpoint:** `POST /v1/resolve/specs`
 
 ## Authentication
 
@@ -33,18 +31,18 @@ sequenceDiagram
     participant P as Parser
     participant E as Enrichment
     participant D as Database
-    
+
     F->>T: Upload file with JWT
     T-->>F: Return file URL
-    F->>A: POST /v1/resolve/specs
+    F->>A: POST /v1/{endpoint}
     A->>T: Fetch file internally
     T-->>A: File contents
     A->>P: Parse file
     P-->>A: Extracted data
     A->>D: Record usage event
-    A->>E: Enrich with stock data
-    E-->>A: Enriched line items
-    A-->>F: Return enriched data + usage
+    A->>E: Enrich/process data
+    E-->>A: Processed results
+    A-->>F: Return results + usage
 ```
 
 <Steps>
@@ -52,223 +50,224 @@ sequenceDiagram
     After the TUS upload completes, your frontend receives the file URL.
   </Step>
   <Step title="Call Processing Endpoint">
-    Your frontend sends a POST request with the file URL and delegation token.
+    Your frontend sends a POST request with the file URL and delegation token to any supported endpoint.
   </Step>
   <Step title="Internal Fetch">
     The API fetches the file from storage using the provided URL.
   </Step>
   <Step title="Parsing">
-    The parser extracts structured data from the uploaded plant schedule.
+    The parser extracts structured data from the uploaded file.
   </Step>
   <Step title="Usage Recording">
     Usage is recorded against the merchant's ledger (from the JWT). See [Usage & Billing](/platform-integration/usage-billing).
   </Step>
-  <Step title="Stock Enrichment">
-    Line items are matched against the stock database and enriched with specifications.
+  <Step title="Processing">
+    The endpoint processes the extracted data (validation, classification, enrichment, etc.).
   </Step>
   <Step title="Response">
-    Enriched data and usage information are returned directly to your frontend.
+    Processed data and usage information are returned directly to your frontend.
   </Step>
 </Steps>
 
-## Request
+## Discovering Available Endpoints
 
-### Headers
+Use the route discovery endpoint to find all endpoints that support post-upload processing:
+
+```bash
+curl https://api.superseeded.ai/v1/routes/from-upload
+```
+
+**Response:**
+```json
+{
+  "routes": [
+    {
+      "id": "verify-plant-names",
+      "name": "Verify Plant Names",
+      "description": "Verify botanical plant names are correct and spelled properly",
+      "endpoint": "/v1/verify/plant-names",
+      "method": "POST",
+      "requires_auth": true,
+      "accepted_file_types": [".json", ".xlsx", ".xls", ".csv", ".txt", ".pdf"],
+      "category": "verification"
+    },
+    {
+      "id": "validate-pot-sizes",
+      "name": "Validate Pot Sizes",
+      "description": "Classify pot sizes and plant specifications into Growth Equivalent categories",
+      "endpoint": "/v1/verify/pot-sizes",
+      "method": "POST",
+      "requires_auth": true,
+      "accepted_file_types": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"],
+      "category": "enrichment"
+    }
+  ],
+  "version": "1.0"
+}
+```
+
+## Example: Species Name Validation
+
+This example shows how to validate botanical names from an uploaded file.
+
+### Request
+
+**Headers:**
 
 | Header | Value | Description |
 |--------|-------|-------------|
 | `Authorization` | `Bearer <token>` | The delegation token from `/v1/auth/delegate-upload` |
 | `Content-Type` | `application/json` | Required for JSON body |
 
-### Request Body
+**Request Body:**
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `file_url` | string | Yes | The TUS upload URL returned after upload completes |
+| `filename` | string | No | Original filename for context |
 
 ### Example Request
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.superseeded.ai/v1/resolve/specs \
+curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -H "Content-Type: application/json" \
-  -d '{"file_url": "https://secure.superseeded.ai/files/abc123"}'
+  -d '{
+    "file_url": "https://secure.superseeded.ai/files/abc123",
+    "filename": "plant_schedule.xlsx"
+  }'
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.superseeded.ai/v1/resolve/specs', {
+const response = await fetch('https://api.superseeded.ai/v1/verify/plant-names', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${delegationToken}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    file_url: uploadResult.uploadURL
+    file_url: uploadResult.uploadURL,
+    filename: 'plant_schedule.xlsx'
   })
 });
 
-const { success, enriched_data, usage } = await response.json();
+const { results, summary } = await response.json();
 ```
 
 ```python Python
 import requests
 
 response = requests.post(
-    "https://api.superseeded.ai/v1/resolve/specs",
+    "https://api.superseeded.ai/v1/verify/plant-names",
     headers={
         "Authorization": f"Bearer {delegation_token}",
         "Content-Type": "application/json"
     },
-    json={"file_url": "https://secure.superseeded.ai/files/abc123"}
+    json={
+        "file_url": "https://secure.superseeded.ai/files/abc123",
+        "filename": "plant_schedule.xlsx"
+    }
 )
 result = response.json()
 ```
 
 </CodeGroup>
 
-## Response
-
-The endpoint returns enriched data with usage information:
+### Example Response
 
 ```json
 {
-  "success": true,
-  "usage": {
-    "is_billable": true,
-    "rows_processed": 42,
-    "file_origin": "external",
-    "month_totals": {
-      "month": "2024-01",
-      "is_active": true,
-      "row_count": 142,
-      "billable_row_count": 100
-    }
-  },
-  "enriched_data": {
-    "results": [
-      {
-        "input_label": "400mm AS",
-        "match_confidence": "High",
-        "standard_data": {
-          "id": "4.1",
-          "evergreen_connect_potsize_id": [61, 79, 81, 91, 96, 103],
-          "type": "Pot - Air Pruning",
-          "stage_order": 4,
-          "stage_name": "Advanced Production",
-          "is_biological": true,
-          "matching_strategy": "Volume",
-          "logistics": {
-            "tier": "Pallet",
-            "is_stackable": false,
-            "freight_efficiency": "Medium"
-          },
-          "quality_profile": {
-            "transplant_shock_risk": "Very Low",
-            "seasonal_restriction": "None",
-            "inspection_focus": "Desiccation"
-          },
-          "customer_note": "Superior root structure; requires more frequent watering until planted."
-        },
-        "external_ids": null
+  "results": [
+    {
+      "query": {
+        "submitted_name": "Eucalyptus globulus",
+        "normalized_name": "eucalyptus globulus",
+        "query_timestamp": "2025-01-15T10:30:00Z"
+      },
+      "validation": {
+        "status": "validated",
+        "confidence": "high",
+        "consensus_score": 0.98,
+        "sources_checked": 11,
+        "sources_matched": 9
+      },
+      "accepted_name": {
+        "scientific_name": "Eucalyptus globulus",
+        "author": "Labill.",
+        "nomenclatural_status": "accepted",
+        "common_names": [
+          {
+            "name": "Tasmanian Blue Gum",
+            "language": "en",
+            "region": "Global"
+          }
+        ],
+        "taxonomic_rank": "species"
+      },
+      "taxonomy": {
+        "kingdom": "Plantae",
+        "family": "Myrtaceae",
+        "genus": "Eucalyptus",
+        "species": "globulus"
+      },
+      "cross_references": {
+        "gbif_id": "3176787",
+        "wfo_id": "946382",
+        "powo_id": "urn:lsid:ipni.org:names:30001419-2"
       }
-    ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "validated": 1,
+    "uncertain": 0,
+    "not_found": 0
   }
 }
 ```
 
-### Response Fields
+## Example: Pot Size Validation
 
-<ResponseField name="success" type="boolean" required>
-  Whether processing completed successfully
-</ResponseField>
+This example shows how to classify pot sizes from an uploaded file.
 
-<ResponseField name="usage" type="object" required>
-  Usage metrics for this processing event
-</ResponseField>
+### Request
 
-<ResponseField name="usage.is_billable" type="boolean">
-  Whether this document counts toward billing
-</ResponseField>
+```bash
+curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file_url": "https://secure.superseeded.ai/files/abc123",
+    "filename": "inventory.xlsx"
+  }'
+```
 
-<ResponseField name="usage.rows_processed" type="integer">
-  Number of line items processed in this file
-</ResponseField>
+### Response
 
-<ResponseField name="usage.file_origin" type="string">
-  Either `"external"` or `"superseed_engine"`
-</ResponseField>
-
-<ResponseField name="usage.month_totals" type="object">
-  Cumulative usage for the current billing month
-</ResponseField>
-
-<ResponseField name="enriched_data" type="object" required>
-  Spec resolution results containing aligned plant specifications
-</ResponseField>
-
-<ResponseField name="enriched_data.results" type="array" required>
-  Array of resolved spec objects with standard data
-</ResponseField>
-
-### Spec Resolution Result Fields
-
-<ResponseField name="input_label" type="string">
-  The original raw text label that was resolved
-</ResponseField>
-
-<ResponseField name="match_confidence" type="string">
-  Confidence level of the match: `"Exact"`, `"High"`, `"Medium"`, or `"Low"`
-</ResponseField>
-
-<ResponseField name="standard_data" type="object">
-  Structured biological concept data
-</ResponseField>
-
-<ResponseField name="standard_data.id" type="string">
-  Unique identifier for this specification
-</ResponseField>
-
-<ResponseField name="standard_data.evergreen_connect_potsize_id" type="integer[]">
-  Array of associated EvergreenConnect pot size IDs
-</ResponseField>
-
-<ResponseField name="standard_data.type" type="string">
-  Container type classification
-</ResponseField>
-
-<ResponseField name="standard_data.stage_order" type="integer">
-  Maturity stage number (0-5)
-</ResponseField>
-
-<ResponseField name="standard_data.stage_name" type="string">
-  Human-readable maturity stage name
-</ResponseField>
-
-<ResponseField name="standard_data.is_biological" type="boolean">
-  Whether this represents a biological growth stage
-</ResponseField>
-
-<ResponseField name="standard_data.matching_strategy" type="string">
-  Strategy used for matching: `"Volume"`, `"Volume/Weight"`, `"Volume Critical (Wildcard)"`, etc.
-</ResponseField>
-
-<ResponseField name="standard_data.logistics" type="object">
-  Freight and handling constraints
-</ResponseField>
-
-<ResponseField name="standard_data.quality_profile" type="object">
-  Risk and handling information
-</ResponseField>
-
-<ResponseField name="standard_data.customer_note" type="string">
-  Human-readable guidance for handling
-</ResponseField>
-
-<ResponseField name="external_ids" type="object | null">
-  External system identifiers (currently null)
-</ResponseField>
+```json
+{
+  "results": [
+    {
+      "input_label": "400mm AS",
+      "match_confidence": "High",
+      "standard_data": {
+        "id": "4.1",
+        "type": "Pot - Air Pruning",
+        "stage_order": 4,
+        "stage_name": "Advanced Production",
+        "is_biological": true,
+        "logistics": {
+          "tier": "Pallet",
+          "is_stackable": false,
+          "freight_efficiency": "Medium"
+        }
+      }
+    }
+  ]
+}
+```
 
 ## Error Responses
 
@@ -279,16 +278,16 @@ The endpoint returns enriched data with usage information:
 | `403` | `forbidden` | Token doesn't have access to the specified file |
 | `404` | `file_not_found` | The specified file URL does not exist |
 | `422` | `parsing_failed` | Could not extract data from file |
-| `500` | `enrichment_error` | Stock enrichment service unavailable |
+| `500` | `processing_error` | Processing service unavailable |
 
 ## Token Reuse
 
 <Note>
   The delegation token serves dual purposes:
-  
-  1. **Upload authentication** - Authorizes the TUS upload
-  2. **Processing authentication** - Authorizes this endpoint and identifies the merchant for billing
-  
+
+  1. **Upload authentication** — Authorizes the TUS upload
+  2. **Processing authentication** — Authorizes processing endpoints and identifies the merchant for billing
+
   This design simplifies integration since you only need to manage one token per upload session.
 </Note>
 
@@ -296,12 +295,69 @@ The endpoint returns enriched data with usage information:
 
 <AccordionGroup>
   <Accordion title="Call immediately after upload">
-    For the best user experience, call this endpoint as soon as the TUS upload completes. The delegation token has a 5-minute expiration, so don't delay processing.
+    For the best user experience, call the processing endpoint as soon as the TUS upload completes. The delegation token has a 5-minute expiration, so don't delay processing.
   </Accordion>
   <Accordion title="Handle the response in your UI">
-    Since the enriched data is returned directly, you can display results to your users immediately without waiting for webhooks or polling.
+    Since the data is returned directly, you can display results to your users immediately without waiting for webhooks or polling.
   </Accordion>
-  <Accordion title="Store the usage data">
-    The `usage` object in the response contains billing information. Consider logging this for your own records and displaying it to merchants.
+  <Accordion title="Use route discovery">
+    Call `/v1/routes/from-upload` to dynamically discover available processing endpoints and their capabilities, rather than hardcoding endpoint paths.
+  </Accordion>
+  <Accordion title="Check accepted file types">
+    Each endpoint specifies which file types it can process. Use the `accepted_file_types` field from route discovery to validate files before upload.
   </Accordion>
 </AccordionGroup>
+
+## Complete Integration Example
+
+```javascript
+// 1. Get delegation token
+const tokenResponse = await fetch('https://api.superseeded.ai/v1/auth/delegate-upload', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'sk_...',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    merchant_id: 'merchant_123'
+  })
+});
+const { delegation_token } = await tokenResponse.json();
+
+// 2. Upload file via TUS
+const upload = new tus.Upload(file, {
+  endpoint: 'https://secure.superseeded.ai/files/',
+  headers: {
+    'Authorization': `Bearer ${delegation_token}`
+  },
+  onSuccess: async () => {
+    const fileUrl = upload.url;
+
+    // 3. Process uploaded file
+    const processResponse = await fetch('https://api.superseeded.ai/v1/verify/plant-names', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${delegation_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        file_url: fileUrl,
+        filename: file.name
+      })
+    });
+
+    const results = await processResponse.json();
+
+    // 4. Display results to user
+    displayResults(results);
+  }
+});
+
+upload.start();
+```
+
+## Related Documentation
+
+- [Upload Delegation](/platform-integration/upload-delegation) — How to obtain delegation tokens
+- [Usage & Billing](/platform-integration/usage-billing) — How usage is tracked and billed
+- [Route Discovery](/api-reference/endpoint/route-discovery) — Endpoint to discover available processing routes
