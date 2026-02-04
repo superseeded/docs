@@ -143,7 +143,7 @@ The generated token contains claims that are used for attribution and billing:
     Uppy uploads the file directly to our TUS server using the token for authentication. After the upload completes, Uppy returns the file URL.
   </Step>
   <Step title="Call Processing Endpoint">
-    Your frontend calls the resolve-specs endpoint with the **same delegation token** and the uploaded file URL.
+    Your frontend calls the verify-pot-sizes endpoint with the **same delegation token** and the uploaded file URL.
     ```javascript
     const response = await fetch('https://api.superseeded.ai/v1/verify/pot-sizes', {
       method: 'POST',
@@ -159,7 +159,7 @@ The generated token contains claims that are used for attribution and billing:
     ```
   </Step>
   <Step title="Receive Enriched Data">
-    The API fetches the file internally, processes it, bills the merchant (from the JWT), and returns enriched data directly in the response. See [Resolve Specs from Upload](/platform-integration/tus-webhook) for the full response schema.
+    The API fetches the file internally, processes it, bills the merchant (from the JWT), and returns enriched data directly in the response. See [Verify Pot Sizes from Upload](/platform-integration/tus-webhook) for the full response schema.
   </Step>
 </Steps>
 

@@ -79,7 +79,7 @@ SuperSeed.init({
   onComplete: (result) => {
     console.log('Upload complete:', result.uploadId);
     console.log('File URL:', result.fileUrl);
-    // Call the resolve-specs endpoint with the file URL to process and get enriched data
+    // Call the verify-pot-sizes endpoint with the file URL to process and get enriched data
   },
   
   onError: (error) => {
@@ -263,7 +263,7 @@ For production stability, pin to a specific version:
       },
       
       onComplete: async (result) => {
-        // Call resolve-specs with the file URL to process and get enriched data
+        // Call verify-pot-sizes with the file URL to process and get enriched data
         const response = await fetch('https://api.superseeded.ai/v1/verify-pot-sizes', {
           method: 'POST',
           headers: {

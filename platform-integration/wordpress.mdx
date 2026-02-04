@@ -194,7 +194,7 @@ container.addEventListener('superseeded:routes-complete', (e) => {
 | `superseeded:complete` | `{ id, uploadURL, fileUrl, name }` - `uploadURL` is TUS endpoint, `fileUrl` is download URL |
 | `superseeded:error` | `{ id, error }` |
 | `superseeded:server-notified` | `{ success, message, data }` |
-| `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` - fired when resolve-specs route completes |
+| `superseeded:specs-resolved` | `{ id, fileUrl, fileName, specsData }` - fired when verify-pot-sizes route completes |
 | `superseeded:route-complete` | `{ fileId, route, result }` - `result` contains `{ route_id, success, data }` |
 | `superseeded:route-error` | `{ fileId, route, error }` |
 | `superseeded:routes-complete` | `{ fileId, results, successful, failed }` - fired when all routes finish |
@@ -286,7 +286,7 @@ POST /wp-json/superseeded/v1/upload-complete
 
 ### Resolve Specs Endpoint
 
-Proxy for the SuperSeeded resolve-specs API. Use this to process items and retrieve enriched data.
+Proxy for the SuperSeeded verify-pot-sizes API. Use this to process items and retrieve enriched data.
 
 ```
 POST /wp-json/superseeded/v1/resolve-specs
@@ -364,7 +364,7 @@ add_action( 'superseeded_upload_complete', function( $upload_data ) {
 
 ### superseeded_specs_resolved
 
-Fires when the resolve-specs API returns enriched data from a processed request via the WordPress proxy endpoint.
+Fires when the verify-pot-sizes API returns enriched data from a processed request via the WordPress proxy endpoint.
 
 ```php
 add_action( 'superseeded_specs_resolved', function( $response, $items ) {
@@ -398,14 +398,14 @@ SuperSeededWordPress.fetchDelegationToken().then(function(tokenData) {
     console.log('TUS Endpoint:', tokenData.tusEndpoint);
 });
 
-// Call resolve-specs via WordPress proxy (for manual item arrays)
+// Call verify-pot-sizes via WordPress proxy (for manual item arrays)
 SuperSeededWordPress.resolveSpecs(['400mm AS', '20L Planter Bag']).then(function(result) {
     console.log('Results:', result.results);
 }).catch(function(error) {
     console.error('Failed to resolve specs:', error);
 });
 
-// Call resolve-specs directly using delegation token and file URL
+// Call verify-pot-sizes directly using delegation token and file URL
 // (This is what the widget uses internally after upload)
 SuperSeededWordPress.resolveSpecsFromUpload(fileUrl, token).then(function(result) {
     console.log('Results:', result.results);

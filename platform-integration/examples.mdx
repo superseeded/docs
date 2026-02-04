@@ -9,7 +9,7 @@ Choose your integration path:
 
 <CardGroup cols={2}>
   <Card title="Backend Integration" icon="server" href="#backend">
-    Get upload tokens and call resolve-specs
+    Get upload tokens and call verify-pot-sizes
   </Card>
   <Card title="Frontend Integration" icon="upload" href="#frontend">
     Upload files with Uppy
@@ -60,9 +60,9 @@ def get_upload_token(merchant_id: str, platform_api_key: str) -> str:
 
 </CodeGroup>
 
-### Call Resolve Specs
+### Call Verify Pot Sizes
 
-After a successful upload, call the validate-pot-sizes endpoint with the delegation token and file URL to process the file and retrieve enriched data.
+After a successful upload, call the verify-pot-sizes endpoint with the delegation token and file URL to process the file and retrieve enriched data.
 
 <CodeGroup>
 
@@ -93,7 +93,7 @@ async function validatePotSizes(delegationToken, fileUrl) {
 }
 ```
 
-```python resolve-specs.py
+```python verify-pot-sizes.py
 import requests
 
 def validate_pot_sizes(delegation_token: str, file_url: str) -> dict:
@@ -207,8 +207,8 @@ For the complete set of examples, see the [examples repository](https://github.c
     <ul>
       <li><code>get-upload-token.js</code> - JavaScript token request</li>
       <li><code>get-upload-token.py</code> - Python token request</li>
-      <li><code>resolve-specs.js</code> - JavaScript resolve-specs call</li>
-      <li><code>resolve-specs.py</code> - Python resolve-specs call</li>
+      <li><code>verify-pot-sizes.js</code> - JavaScript verify-pot-sizes call</li>
+      <li><code>verify-pot-sizes.py</code> - Python verify-pot-sizes call</li>
     </ul>
   </AccordionItem>
   <AccordionItem title="Frontend Examples">
@@ -218,7 +218,7 @@ For the complete set of examples, see the [examples repository](https://github.c
   </AccordionItem>
   <AccordionItem title="Complete Flow">
     <ul>
-      <li><code>complete-flow.js</code> - End-to-end example with token, upload, and resolve-specs</li>
+      <li><code>complete-flow.js</code> - End-to-end example with token, upload, and verify-pot-sizes</li>
     </ul>
   </AccordionItem>
 </Accordion>

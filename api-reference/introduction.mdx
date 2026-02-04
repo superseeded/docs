@@ -1,13 +1,11 @@
 ---
 title: 'Introduction'
-description: 'API reference for the SuperSeeded Harmonization Engine'
+description: 'API for planting and procurement'
 ---
 
 ## Welcome to the SuperSeeded API
 
-The SuperSeeded API provides programmatic access to the **Spec Harmonization Engine**. This allows you to integrate plant specification parsing and matching into your applications.
-
-This API converts unstructured nursery data into standardized biological concepts.
+The SuperSeeded API provides programmatic access to our services for plant specification parsing, matching, and botanical name verification.
 
 <Card
   title="OpenAPI Specification"
@@ -50,6 +48,17 @@ curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
   -H "X-API-Key: sk-sup-v1*****************************************" \
   -d '{
     "items": ["400mm AS", "20L Bag"]
+  }'
+```
+
+Or validate botanical names:
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-sup-v1*****************************************" \
+  -d '{
+    "species_names": ["Eucalyptus globulus", "Acacia melanoxylon"]
   }'
 ```
 

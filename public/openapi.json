@@ -238,8 +238,8 @@
         "example": {
           "routes": [
             {
-              "id": "resolve-specs",
-              "name": "Resolve Specifications",
+              "id": "verify-pot-sizes",
+              "name": "Verify Pot Sizes",
               "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
               "endpoint": "/v1/verify/pot-sizes",
               "method": "POST",
@@ -257,7 +257,7 @@
           "id": {
             "type": "string",
             "description": "Unique route identifier",
-            "example": "resolve-specs"
+            "example": "verify-pot-sizes"
           },
           "name": {
             "type": "string",
