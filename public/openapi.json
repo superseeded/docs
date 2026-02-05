@@ -100,11 +100,6 @@
           "description": "Object containing a list of raw spec strings to be resolved, file reference, or direct file upload.",
           "required": true,
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResolveSpecsRequest"
-              }
-            },
             "multipart/form-data": {
               "schema": {
                 "type": "object",
@@ -121,6 +116,11 @@
                     "description": "What to extract from the file."
                   }
                 }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSpecsRequest"
               }
             }
           }
@@ -163,11 +163,6 @@
           "description": "Object containing species names to validate or file reference.",
           "required": true,
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateSpeciesRequest"
-              }
-            },
             "multipart/form-data": {
               "schema": {
                 "type": "object",
@@ -182,6 +177,11 @@
                     "description": "Column name containing species names for spreadsheet files."
                   }
                 }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSpeciesRequest"
               }
             }
           }
@@ -328,6 +328,7 @@
           },
           "file_url": {
             "type": "string",
+            "format": "binary",
             "description": "URL to a previously uploaded file (from TUS storage). Must be from secure.superseeded.ai or api.superseeded.ai."
           },
           "filename": {
@@ -472,6 +473,7 @@
           },
           "file_url": {
             "type": "string",
+            "format": "binary",
             "description": "URL to uploaded file containing species names",
             "example": "https://secure.superseeded.ai/files/abc123"
           },

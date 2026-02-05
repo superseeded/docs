@@ -46,10 +46,10 @@ curl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \
   An array of raw plant specification strings to be resolved. Takes precedence over file inputs.
 </ParamField>
 
-<ParamField body="file_url" type="string">
+<ParamField body="file_url" type="file">
   URL to a previously uploaded file (from TUS storage). Must be from `secure.superseeded.ai` or `api.superseeded.ai`.
 
-  **Tip:** To test with a local file in this playground, switch the body content-type to `multipart/form-data` to use the file input dialog.
+  **Tip:** You can use the file input dialog in this playground to test with a local file.
 </ParamField>
 
 <ParamField body="filename" type="string">
