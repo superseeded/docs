@@ -6,7 +6,7 @@ description: "Generate species distribution models and climate suitability maps 
 
 ## Overview
 
-The SDM (Species Distribution Modeling) endpoints allow you to generate predictive models showing where species can survive under current and future climate conditions. The API uses MaxEnt modeling with CHELSA climate data to produce high-quality distribution maps.
+The SDM (Species Distribution Modeling) endpoints generate predictive models showing where species can survive under current and future climate conditions. The API uses MaxEnt modeling with CHELSA climate data to produce distribution maps.
 
 ## Generate SDM
 
@@ -18,7 +18,7 @@ The SDM (Species Distribution Modeling) endpoints allow you to generate predicti
   Global Climate Model to use for projections
 
   Available models:
-  - `mpi-esm1-2-hr` (recommended)
+  - `mpi-esm1-2-hr`
   - `ukesm1-0-ll`
   - `ipsl-cm6a-lr`
   - `miroc6`
@@ -29,10 +29,10 @@ The SDM (Species Distribution Modeling) endpoints allow you to generate predicti
   Emission scenario for future projections
 
   Options:
-  - `ssp126` - Very low emissions (best case)
+  - `ssp126` - Very low emissions
   - `ssp245` - Intermediate emissions
   - `ssp370` - High emissions
-  - `ssp585` - Very high emissions (worst case)
+  - `ssp585` - Very high emissions
 </ParamField>
 
 <ParamField body="period" type="string" default="2070">
@@ -53,7 +53,7 @@ The SDM (Species Distribution Modeling) endpoints allow you to generate predicti
 <ParamField body="include_gradient_maps" type="boolean" default="true">
   Whether to generate gradient suitability maps and trajectory streamplot
 
-  When true, generates:
+  Generates:
   - Current climate suitability gradient
   - Future climate suitability gradient
   - Stability trajectory streamplot showing habitat shifts
@@ -155,7 +155,7 @@ print(f"Job ID: {data['job_id']}")
 
 ---
 
-## Check Job Status
+## Check job status
 
 <Note>
 SDM generation typically takes 2-4 minutes to complete depending on the species and data availability.
@@ -165,7 +165,7 @@ SDM generation typically takes 2-4 minutes to complete depending on the species 
 GET /v1/sdm/status/{job_id}
 ```
 
-### Response Fields
+### Response fields
 
 <ResponseField name="job_id" type="string">
   The job identifier
@@ -193,7 +193,7 @@ GET /v1/sdm/status/{job_id}
   Error message if job failed
 </ResponseField>
 
-### Example Response (Completed)
+### Example response (completed)
 
 ```json
 {
@@ -216,7 +216,7 @@ GET /v1/sdm/status/{job_id}
 
 ---
 
-## Download Results
+## Download results
 
 ```http
 GET /v1/sdm/download/{job_id}/{file_type}
@@ -224,12 +224,12 @@ GET /v1/sdm/download/{job_id}/{file_type}
 
 Downloads the generated visualization files as PNG images.
 
-### Available File Types
+### Available file types
 
-- **`change_plot`** - Shows habitat gain, loss, and stability between current and future climates
-- **`current_gradient`** - Current climate suitability map with gradient coloring
-- **`future_gradient`** - Future climate suitability map for the specified period
-- **`trajectory_streamplot`** - Streamlines showing how suitable habitat areas shift over time
+- `change_plot` - Shows habitat gain, loss, and stability between current and future climates
+- `current_gradient` - Current climate suitability map with gradient coloring
+- `future_gradient` - Future climate suitability map for the specified period
+- `trajectory_streamplot` - Streamlines showing how suitable habitat areas shift over time
 
 ### Example
 
@@ -242,18 +242,18 @@ curl -X GET 'https://api.superseeded.ai/v1/sdm/download/7fb88dc37627701681adae89
 
 ---
 
-## Implementation Details
+## Implementation details
 
-<Accordion title="Technical Architecture">
+<Accordion title="Technical architecture">
   The SDM service uses:
-  - **MaxEnt modeling** for species distribution predictions
-  - **CHELSA v2.1** climate data (1km resolution)
-  - **GBIF** species occurrence records
-  - **Modal.com** for scalable compute (16GB RAM per job)
-  - **Persistent caching** for climate data files
+  - MaxEnt modeling for species distribution predictions
+  - CHELSA v2.1 climate data (1km resolution)
+  - GBIF species occurrence records
+  - Cloud compute infrastructure (16GB RAM per job)
+  - Persistent caching for climate data files
 </Accordion>
 
-<Accordion title="Rate Limits">
+<Accordion title="Rate limits">
   - Maximum 10 concurrent SDM jobs per API key
   - Each job has a 1-hour timeout
   - Results are cached for 7 days

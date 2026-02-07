@@ -36,7 +36,8 @@
             "group": "Core Concepts",
             "pages": [
               "guides/alignment",
-              "guides/species-validation"
+              "guides/species-validation",
+              "guides/species-distribution-modeling"
             ]
           }
         ]
