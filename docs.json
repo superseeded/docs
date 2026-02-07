@@ -57,7 +57,8 @@
               "api-reference/endpoint/verify-pot-sizes",
               "api-reference/endpoint/verify-plant-names",
               "api-reference/endpoint/sources-taxonomic",
-              "api-reference/endpoint/route-discovery"
+              "api-reference/endpoint/route-discovery",
+              "api-reference/endpoint/sdm-modeling"
             ]
           }
         ]

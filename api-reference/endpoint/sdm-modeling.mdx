@@ -1,0 +1,264 @@
+---
+title: "Species Distribution Modeling"
+api: "POST /v1/sdm/generate"
+description: "Generate species distribution models and climate suitability maps for any species"
+---
+
+## Overview
+
+The SDM (Species Distribution Modeling) endpoints allow you to generate predictive models showing where species can survive under current and future climate conditions. The API uses MaxEnt modeling with CHELSA climate data to produce high-quality distribution maps.
+
+## Generate SDM
+
+<ParamField body="species_name" type="string" required>
+  Scientific name of the species to model (e.g., "Eucalyptus regnans")
+</ParamField>
+
+<ParamField body="gcm" type="string" default="mpi-esm1-2-hr">
+  Global Climate Model to use for projections
+
+  Available models:
+  - `mpi-esm1-2-hr` (recommended)
+  - `ukesm1-0-ll`
+  - `ipsl-cm6a-lr`
+  - `miroc6`
+  - `ec-earth3`
+</ParamField>
+
+<ParamField body="scenario" type="string" default="ssp585">
+  Emission scenario for future projections
+
+  Options:
+  - `ssp126` - Very low emissions (best case)
+  - `ssp245` - Intermediate emissions
+  - `ssp370` - High emissions
+  - `ssp585` - Very high emissions (worst case)
+</ParamField>
+
+<ParamField body="period" type="string" default="2070">
+  Future time period for projections
+
+  Options:
+  - `2030` - Near future (2011-2040)
+  - `2050` - Mid-century (2041-2070)
+  - `2070` - Late century (2071-2100)
+</ParamField>
+
+<ParamField body="threshold" type="number" default="0.5">
+  Suitability threshold for classification (0.0 to 1.0)
+
+  Values above this threshold are considered suitable habitat
+</ParamField>
+
+<ParamField body="include_gradient_maps" type="boolean" default="true">
+  Whether to generate gradient suitability maps and trajectory streamplot
+
+  When true, generates:
+  - Current climate suitability gradient
+  - Future climate suitability gradient
+  - Stability trajectory streamplot showing habitat shifts
+</ParamField>
+
+<ParamField body="cache_tif_files" type="boolean" default="true">
+  Whether to cache downloaded climate data files for faster subsequent requests
+</ParamField>
+
+## Response
+
+<ResponseField name="job_id" type="string">
+  Unique identifier for the SDM generation job
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current status of the job (`queued`, `processing`, `completed`, `failed`)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable status message
+</ResponseField>
+
+<ResponseField name="status_url" type="string">
+  URL to check job status and retrieve results
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl -X POST 'https://api.superseeded.ai/v1/sdm/generate' \
+  -H 'X-API-Key: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "species_name": "Eucalyptus regnans",
+    "gcm": "mpi-esm1-2-hr",
+    "scenario": "ssp585",
+    "period": "2070",
+    "include_gradient_maps": true
+  }'
+```
+
+```javascript Node.js
+const response = await fetch('https://api.superseeded.ai/v1/sdm/generate', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    species_name: 'Eucalyptus regnans',
+    gcm: 'mpi-esm1-2-hr',
+    scenario: 'ssp585',
+    period: '2070',
+    include_gradient_maps: true
+  })
+});
+
+const data = await response.json();
+console.log('Job ID:', data.job_id);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.superseeded.ai/v1/sdm/generate',
+    headers={
+        'X-API-Key': 'YOUR_API_KEY',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'species_name': 'Eucalyptus regnans',
+        'gcm': 'mpi-esm1-2-hr',
+        'scenario': 'ssp585',
+        'period': '2070',
+        'include_gradient_maps': True
+    }
+)
+
+data = response.json()
+print(f"Job ID: {data['job_id']}")
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json
+{
+  "job_id": "7fb88dc37627701681adae8932f85132",
+  "status": "queued",
+  "message": "Job 7fb88dc37627701681adae8932f85132 has been queued for processing",
+  "status_url": "/v1/sdm/status/7fb88dc37627701681adae8932f85132"
+}
+```
+
+</ResponseExample>
+
+---
+
+## Check Job Status
+
+<Note>
+SDM generation typically takes 2-4 minutes to complete depending on the species and data availability.
+</Note>
+
+```http
+GET /v1/sdm/status/{job_id}
+```
+
+### Response Fields
+
+<ResponseField name="job_id" type="string">
+  The job identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Current job status (`queued`, `processing`, `completed`, `failed`)
+</ResponseField>
+
+<ResponseField name="results" type="object">
+  File paths for generated outputs (when completed)
+</ResponseField>
+
+<ResponseField name="plots" type="object">
+  Download URLs for visualization files (when completed)
+
+  Available plots:
+  - `change_plot` - Suitability change map
+  - `current_gradient` - Current climate suitability
+  - `future_gradient` - Future climate suitability
+  - `trajectory_streamplot` - Habitat shift trajectories
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message if job failed
+</ResponseField>
+
+### Example Response (Completed)
+
+```json
+{
+  "job_id": "7fb88dc37627701681adae8932f85132",
+  "status": "completed",
+  "results": {
+    "change_plot": "/cache/7fb88dc37627701681adae8932f85132/suitability_change_2070.png",
+    "current_gradient": "/cache/7fb88dc37627701681adae8932f85132/current_suitability_gradient.png",
+    "future_gradient": "/cache/7fb88dc37627701681adae8932f85132/future_suitability_2070_gradient.png",
+    "trajectory_streamplot": "/cache/7fb88dc37627701681adae8932f85132/suitability_trajectory_2070.png"
+  },
+  "plots": {
+    "change_plot": "/v1/sdm/download/7fb88dc37627701681adae8932f85132/change_plot",
+    "current_gradient": "/v1/sdm/download/7fb88dc37627701681adae8932f85132/current_gradient",
+    "future_gradient": "/v1/sdm/download/7fb88dc37627701681adae8932f85132/future_gradient",
+    "trajectory_streamplot": "/v1/sdm/download/7fb88dc37627701681adae8932f85132/trajectory_streamplot"
+  }
+}
+```
+
+---
+
+## Download Results
+
+```http
+GET /v1/sdm/download/{job_id}/{file_type}
+```
+
+Downloads the generated visualization files as PNG images.
+
+### Available File Types
+
+- **`change_plot`** - Shows habitat gain, loss, and stability between current and future climates
+- **`current_gradient`** - Current climate suitability map with gradient coloring
+- **`future_gradient`** - Future climate suitability map for the specified period
+- **`trajectory_streamplot`** - Streamlines showing how suitable habitat areas shift over time
+
+### Example
+
+```bash
+# Download the trajectory streamplot
+curl -X GET 'https://api.superseeded.ai/v1/sdm/download/7fb88dc37627701681adae8932f85132/trajectory_streamplot' \
+  -H 'X-API-Key: YOUR_API_KEY' \
+  -o trajectory.png
+```
+
+---
+
+## Implementation Details
+
+<Accordion title="Technical Architecture">
+  The SDM service uses:
+  - **MaxEnt modeling** for species distribution predictions
+  - **CHELSA v2.1** climate data (1km resolution)
+  - **GBIF** species occurrence records
+  - **Modal.com** for scalable compute (16GB RAM per job)
+  - **Persistent caching** for climate data files
+</Accordion>
+
+<Accordion title="Rate Limits">
+  - Maximum 10 concurrent SDM jobs per API key
+  - Each job has a 1-hour timeout
+  - Results are cached for 7 days
+</Accordion>
+
+<Accordion title="Billing">
+  SDM generation requests are billable events. Each successful job submission counts as one API call for billing purposes.
+</Accordion>
