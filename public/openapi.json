@@ -27,6 +27,10 @@
       "description": "Endpoints for validating botanical species names against taxonomic databases."
     },
     {
+      "name": "Flowers",
+      "description": "Search flowers by color using spectral reflectance data from the Floral Reflectance Database (FReD)."
+    },
+    {
       "name": "System",
       "description": "Health checks and service status."
     }
@@ -231,10 +235,286 @@
           }
         }
       }
+    },
+    "/flowers/by-color": {
+      "get": {
+        "tags": ["Flowers"],
+        "summary": "Find Flowers by Color",
+        "description": "Search 2,509 flower spectral measurements to find flowers matching a given color. Colors are matched using perceptual distance in CIE LAB color space. Data source: Arnold SEJ et al., 2010 FReD: The Floral Reflectance Database. PLoS ONE 5(12): e14287.",
+        "operationId": "findFlowersByColor",
+        "parameters": [
+          {
+            "name": "color",
+            "in": "query",
+            "required": true,
+            "description": "Color to search for. Accepts color names (red, lavender), hex codes (#FF5733), or RGB values (rgb(255,87,51) or 255,87,51).",
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "name": { "value": "purple" },
+              "hex": { "value": "#FF5733" },
+              "rgb": { "value": "255,87,51" }
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results (1-100).",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "family",
+            "in": "query",
+            "description": "Filter by taxonomic family (e.g., Asteraceae).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "human_colour",
+            "in": "query",
+            "description": "Filter by human-perceived color category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "bee_colour",
+            "in": "query",
+            "description": "Filter by bee-perceived color category (UV, blue, blue-green, green, UV-blue, UV-green, white).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching flowers sorted by color similarity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowerColorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid color format"
+          }
+        }
+      }
+    },
+    "/flowers/families": {
+      "get": {
+        "tags": ["Flowers"],
+        "summary": "List Plant Families",
+        "description": "Returns all plant families in the FReD database with sample counts.",
+        "operationId": "listFlowerFamilies",
+        "responses": {
+          "200": {
+            "description": "List of plant families",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "family": { "type": "string" },
+                      "count": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flowers/human-colours": {
+      "get": {
+        "tags": ["Flowers"],
+        "summary": "List Human Color Categories",
+        "description": "Returns all human-perceived color categories in the database.",
+        "operationId": "listHumanColours",
+        "responses": {
+          "200": {
+            "description": "List of human color categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "colour": { "type": "string" },
+                      "count": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flowers/bee-colours": {
+      "get": {
+        "tags": ["Flowers"],
+        "summary": "List Bee Color Categories",
+        "description": "Returns all bee-perceived color categories. Bees see UV, blue, and green but not red.",
+        "operationId": "listBeeColours",
+        "responses": {
+          "200": {
+            "description": "List of bee color categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "colour": { "type": "string" },
+                      "count": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flowers/{flower_id}": {
+      "get": {
+        "tags": ["Flowers"],
+        "summary": "Get Flower Record",
+        "description": "Returns complete flower record including taxonomy, collection info, and spectral color space coordinates.",
+        "operationId": "getFlowerById",
+        "parameters": [
+          {
+            "name": "flower_id",
+            "in": "path",
+            "required": true,
+            "description": "FReD database ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete flower record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowerRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Flower not found"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "FlowerColorResponse": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "object",
+            "properties": {
+              "input": { "type": "string", "description": "Original color input" },
+              "type": { "type": "string", "enum": ["name", "hex", "rgb"] },
+              "rgb": { "type": "array", "items": { "type": "integer" } },
+              "lab": { "type": "array", "items": { "type": "number" } },
+              "filters": { "type": "object" }
+            }
+          },
+          "matches": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FlowerMatch" }
+          },
+          "total_in_database": { "type": "integer" },
+          "citation": { "type": "string" }
+        }
+      },
+      "FlowerMatch": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "FReD database ID" },
+          "scientific_name": { "type": "string" },
+          "family": { "type": "string" },
+          "genus": { "type": "string" },
+          "species": { "type": "string" },
+          "human_colour": { "type": "string" },
+          "bee_colour": { "type": "string" },
+          "rgb": { "type": "array", "items": { "type": "integer" } },
+          "hex": { "type": "string" },
+          "lab": { "type": "array", "items": { "type": "number" } },
+          "color_distance": { "type": "number", "description": "Delta E perceptual distance" },
+          "country": { "type": "string" },
+          "collector": { "type": "string" }
+        }
+      },
+      "FlowerRecord": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "taxonomy": {
+            "type": "object",
+            "properties": {
+              "family": { "type": "string" },
+              "genus": { "type": "string" },
+              "species": { "type": "string" },
+              "full_name": { "type": "string" }
+            }
+          },
+          "collection": {
+            "type": "object",
+            "properties": {
+              "country": { "type": "string" },
+              "town": { "type": "string" },
+              "collector": { "type": "string" },
+              "publication": { "type": "string" }
+            }
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "plant_section": { "type": "string" },
+              "human_colour": { "type": "string" },
+              "bee_colour": { "type": "string" }
+            }
+          },
+          "color_spaces": {
+            "type": "object",
+            "properties": {
+              "colour_triangle": { "type": "object" },
+              "colour_hexagon": { "type": "object" },
+              "coc": { "type": "object" }
+            }
+          },
+          "computed_color": {
+            "type": "object",
+            "properties": {
+              "rgb": { "type": "array", "items": { "type": "integer" } },
+              "hex": { "type": "string" },
+              "lab": { "type": "array", "items": { "type": "number" } }
+            }
+          }
+        }
+      },
       "RouteDiscoveryResponse": {
         "type": "object",
         "properties": {
