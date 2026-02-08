@@ -1,0 +1,220 @@
+---
+title: 'Flower Color Database'
+description: 'Search flowers by color using spectral reflectance data'
+---
+
+The Flower Color API provides access to spectral reflectance data from 2,509 flower species, allowing you to search for flowers by color and understand how they appear to both humans and pollinators.
+
+## Data Source
+
+The data comes from the **Floral Reflectance Database (FReD)**, a scientific database maintained by researchers studying plant-pollinator interactions:
+
+> Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database — A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287
+
+## What is Spectral Reflectance?
+
+Unlike simple RGB color picking, spectral reflectance measures how much light a flower reflects at each wavelength across the visible spectrum (300-700nm). This provides:
+
+- **Accurate color representation** under different lighting conditions
+- **Bee vision simulation** - how pollinators perceive flower colors
+- **Scientific reproducibility** for research applications
+
+## Quick Start
+
+### Find Flowers by Color
+
+```bash
+curl "https://api.superseeded.ai/v1/flowers/by-color?color=purple&limit=10"
+```
+
+The API accepts colors as:
+- **Names**: `red`, `lavender`, `coral`
+- **Hex codes**: `#FF5733` or `FF5733`
+- **RGB values**: `rgb(255,87,51)` or `255,87,51`
+
+### Filter by Taxonomic Family
+
+```bash
+curl "https://api.superseeded.ai/v1/flowers/by-color?color=yellow&family=Asteraceae"
+```
+
+### Get Available Families
+
+```bash
+curl "https://api.superseeded.ai/v1/flowers/families"
+```
+
+## Understanding Bee Vision
+
+Bees perceive colors differently than humans. They have trichromatic vision with three types of photoreceptors:
+
+| Channel | Peak Sensitivity | Human Equivalent |
+|---------|-----------------|------------------|
+| UV | ~340nm | Invisible to us |
+| Blue | ~430nm | Blue |
+| Green | ~540nm | Green |
+
+### Key Differences
+
+1. **Bees cannot see red** - Red flowers appear dark/black to bees
+2. **Bees see ultraviolet** - Many flowers have UV patterns invisible to humans
+3. **"Bee purple"** - UV + Blue appears as a unique color to bees
+
+### Bee Color Categories
+
+The `bee_colour` field indicates the flower's appearance to bee vision:
+
+| Category | Description |
+|----------|-------------|
+| `UV` | Primarily reflects ultraviolet |
+| `blue` | Primarily reflects blue wavelengths |
+| `blue-green` | Reflects both blue and green |
+| `green` | Primarily reflects green |
+| `UV-blue` | "Bee purple" - reflects UV and blue |
+| `UV-green` | Reflects UV and green |
+| `white` | Broad-spectrum reflector |
+
+## Color Matching Algorithm
+
+The API uses **CIE LAB color space** for perceptual color matching. LAB was designed to be perceptually uniform - a given distance in LAB space corresponds to approximately the same perceived color difference regardless of where in the color space you are.
+
+The `color_distance` field in results represents Delta E (ΔE), where:
+- **< 5**: Colors are very similar
+- **5-10**: Noticeable difference but still related
+- **10-30**: Clearly different colors
+- **> 30**: Very different colors
+
+## Example: Building a Color Palette
+
+Find flowers that would create a harmonious color palette:
+
+```python
+import requests
+
+# Get purple flowers
+purple = requests.get(
+    "https://api.superseeded.ai/v1/flowers/by-color",
+    params={"color": "purple", "limit": 5}
+).json()
+
+# Get complementary yellow flowers
+yellow = requests.get(
+    "https://api.superseeded.ai/v1/flowers/by-color",
+    params={"color": "yellow", "limit": 5}
+).json()
+
+print("Purple flowers:")
+for f in purple["matches"]:
+    print(f"  {f['scientific_name']}: {f['hex']}")
+
+print("\nYellow flowers:")
+for f in yellow["matches"]:
+    print(f"  {f['scientific_name']}: {f['hex']}")
+```
+
+## Example: Pollinator-Friendly Garden
+
+Find flowers that are highly visible to bees:
+
+```python
+import requests
+
+# Get flowers with strong UV reflection (highly visible to bees)
+uv_flowers = requests.get(
+    "https://api.superseeded.ai/v1/flowers/by-color",
+    params={"color": "purple", "bee_colour": "UV-blue", "limit": 10}
+).json()
+
+for f in uv_flowers["matches"]:
+    print(f"{f['scientific_name']} ({f['family']})")
+    print(f"  Human sees: {f['human_colour']}")
+    print(f"  Bee sees: {f['bee_colour']}")
+```
+
+## Data Fields
+
+### Full Record (GET /v1/flowers/{id})
+
+The complete record includes:
+
+```json
+{
+  "id": 1670,
+  "taxonomy": {
+    "family": "Ranunculaceae",
+    "genus": "Anemone",
+    "species": "coronaria",
+    "full_name": "Anemone coronaria"
+  },
+  "collection": {
+    "country": "Israel",
+    "town": "Mishor Adummin",
+    "collector": "Chittka",
+    "publication": "Menzel R and Shmida A. 1993 Biol. Rev. 68:81-120"
+  },
+  "classification": {
+    "plant_section": "radially symmetric, whole flower upper side",
+    "human_colour": "white",
+    "bee_colour": "blue"
+  },
+  "color_spaces": {
+    "colour_triangle": {
+      "x": -0.024,
+      "y": 0.077,
+      "quantum_flux": {
+        "uv": 0.350,
+        "blue": 0.419,
+        "green": 0.320
+      }
+    },
+    "colour_hexagon": {
+      "x": -0.015,
+      "y": 0.044,
+      "excitation": {
+        "uv": 0.259,
+        "blue": 0.295,
+        "green": 0.242
+      }
+    }
+  },
+  "computed_color": {
+    "rgb": [255, 248, 240],
+    "hex": "#fff8f0",
+    "lab": [97.8, 1.2, 3.4]
+  }
+}
+```
+
+### Color Space Coordinates
+
+- **Colour Triangle**: Position in bee color triangle based on photoreceptor excitation
+- **Colour Hexagon**: Chittka's color hexagon for perceptual distance calculations
+- **COC**: Color opponent coding coordinates
+
+## Database Statistics
+
+| Metric | Value |
+|--------|-------|
+| Total flowers | 2,509 |
+| Plant families | 108 |
+| Countries | 45+ |
+| Wavelength range | 300-699nm |
+| Resolution | 1nm |
+
+## Use Cases
+
+1. **Landscape Design**: Find flowers with specific colors for garden planning
+2. **Pollinator Research**: Study how pollinators perceive flower colors
+3. **Art & Design**: Extract natural color palettes from flowers
+4. **Education**: Teach about color perception and pollination ecology
+5. **Conservation**: Identify plants attractive to specific pollinators
+
+## API Endpoints Summary
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v1/flowers/by-color` | Find flowers matching a color |
+| `GET /v1/flowers/families` | List all plant families |
+| `GET /v1/flowers/human-colours` | List human color categories |
+| `GET /v1/flowers/bee-colours` | List bee color categories |
+| `GET /v1/flowers/{id}` | Get complete flower record |

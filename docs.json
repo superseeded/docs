@@ -37,7 +37,8 @@
             "pages": [
               "guides/alignment",
               "guides/species-validation",
-              "guides/species-distribution-modeling"
+              "guides/species-distribution-modeling",
+              "guides/flower-colors"
             ]
           }
         ]
@@ -59,7 +60,8 @@
               "api-reference/endpoint/verify-plant-names",
               "api-reference/endpoint/sources-taxonomic",
               "api-reference/endpoint/route-discovery",
-              "api-reference/endpoint/sdm-modeling"
+              "api-reference/endpoint/sdm-modeling",
+              "api-reference/endpoint/flower-colors"
             ]
           }
         ]

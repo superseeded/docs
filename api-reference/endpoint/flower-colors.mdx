@@ -1,0 +1,218 @@
+---
+title: 'Flower Color Lookup'
+openapi: 'GET /flowers/by-color'
+---
+
+Find flowers by color using spectral reflectance data from the Floral Reflectance Database (FReD).
+
+## Overview
+
+This endpoint searches a database of 2,509 flower spectral measurements to find flowers matching a given color. Colors are matched using perceptual distance in CIE LAB color space, providing results that align with human color perception.
+
+The data comes from the Floral Reflectance Database (FReD), a scientific database of flower spectral reflectance measurements used to study plant-pollinator interactions and color vision.
+
+## Color Input Formats
+
+The `color` parameter accepts multiple formats:
+
+| Format | Examples |
+|--------|----------|
+| Color name | `red`, `blue`, `lavender`, `coral`, `chartreuse` |
+| Hex code | `#FF5733`, `FF5733`, `#F00` |
+| RGB values | `rgb(255, 87, 51)`, `255,87,51` |
+
+### Supported Color Names
+
+Common colors: `red`, `green`, `blue`, `yellow`, `orange`, `purple`, `pink`, `white`, `black`, `brown`, `violet`, `magenta`, `cyan`
+
+Flower-specific: `lavender`, `coral`, `salmon`, `crimson`, `rose`, `peach`, `cream`, `ivory`, `gold`, `amber`, `lilac`, `mauve`, `plum`, `indigo`, `turquoise`, `chartreuse`, `burgundy`, `fuchsia`, `periwinkle`
+
+## Query Parameters
+
+<ParamField query="color" type="string" required>
+  The color to search for. Accepts color names, hex codes, or RGB values.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Maximum number of results to return (1-100).
+</ParamField>
+
+<ParamField query="human_colour" type="string">
+  Filter by human-perceived color category. Use `/v1/flowers/human-colours` to list available values.
+</ParamField>
+
+<ParamField query="bee_colour" type="string">
+  Filter by bee-perceived color category. Use `/v1/flowers/bee-colours` to list available values.
+</ParamField>
+
+<ParamField query="family" type="string">
+  Filter by taxonomic family. Use `/v1/flowers/families` to list available families.
+</ParamField>
+
+## Response
+
+<ResponseField name="query" type="object">
+  Parsed query parameters.
+
+  <Expandable title="properties">
+    <ResponseField name="input" type="string">Original color input.</ResponseField>
+    <ResponseField name="type" type="string">Detected input type: `name`, `hex`, or `rgb`.</ResponseField>
+    <ResponseField name="rgb" type="array">Parsed RGB values [R, G, B].</ResponseField>
+    <ResponseField name="lab" type="array">Converted LAB values [L, a, b].</ResponseField>
+    <ResponseField name="filters" type="object">Applied filters.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="matches" type="array">
+  Matching flowers sorted by color similarity.
+
+  <Expandable title="Flower Match Object">
+    <ResponseField name="id" type="integer">FReD database ID.</ResponseField>
+    <ResponseField name="scientific_name" type="string">Scientific name (Genus species).</ResponseField>
+    <ResponseField name="family" type="string">Taxonomic family.</ResponseField>
+    <ResponseField name="genus" type="string">Genus name.</ResponseField>
+    <ResponseField name="species" type="string">Species epithet.</ResponseField>
+    <ResponseField name="human_colour" type="string">Human-perceived color category.</ResponseField>
+    <ResponseField name="bee_colour" type="string">Bee-perceived color category.</ResponseField>
+    <ResponseField name="rgb" type="array">RGB color values [R, G, B].</ResponseField>
+    <ResponseField name="hex" type="string">Hex color code.</ResponseField>
+    <ResponseField name="lab" type="array">CIE LAB color values [L, a, b].</ResponseField>
+    <ResponseField name="color_distance" type="number">Perceptual distance from query (lower is closer).</ResponseField>
+    <ResponseField name="country" type="string">Collection country.</ResponseField>
+    <ResponseField name="collector" type="string">Sample collector.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_in_database" type="integer">
+  Total number of flowers in the database.
+</ResponseField>
+
+<ResponseField name="citation" type="string">
+  Academic citation for the data source.
+</ResponseField>
+
+## Example Request
+
+```bash
+curl "https://api.superseeded.ai/v1/flowers/by-color?color=lavender&limit=5"
+```
+
+## Example Response
+
+```json
+{
+  "query": {
+    "input": "lavender",
+    "type": "name",
+    "rgb": [230, 230, 250],
+    "lab": [91.28, 3.71, -9.66],
+    "filters": {
+      "human_colour": null,
+      "bee_colour": null,
+      "family": null
+    }
+  },
+  "matches": [
+    {
+      "id": 1643,
+      "scientific_name": "Geranium sylvaticum",
+      "family": "Geraniaceae",
+      "genus": "Geranium",
+      "species": "sylvaticum",
+      "human_colour": "pink",
+      "bee_colour": "UV-blue",
+      "rgb": [193, 177, 196],
+      "hex": "#c1b1c4",
+      "lab": [74.12, 8.45, -6.23],
+      "color_distance": 17.84,
+      "country": "Germany",
+      "collector": "Chittka"
+    },
+    {
+      "id": 2154,
+      "scientific_name": "Campanula rotundifolia",
+      "family": "Campanulaceae",
+      "genus": "Campanula",
+      "species": "rotundifolia",
+      "human_colour": "violet",
+      "bee_colour": "blue",
+      "rgb": [178, 162, 201],
+      "hex": "#b2a2c9",
+      "lab": [69.45, 12.34, -18.67],
+      "color_distance": 23.41,
+      "country": "Switzerland",
+      "collector": "Menzel"
+    }
+  ],
+  "total_in_database": 2509,
+  "citation": "Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database — A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287"
+}
+```
+
+## Understanding Bee Color Vision
+
+Bees see colors differently than humans. They have three photoreceptors:
+
+| Photoreceptor | Peak Wavelength | Notes |
+|---------------|-----------------|-------|
+| UV | ~340nm | Invisible to humans |
+| Blue | ~430nm | Similar to human blue |
+| Green | ~540nm | Similar to human green |
+
+Bees cannot see red but can see ultraviolet, which is invisible to humans. The `bee_colour` field indicates how bees perceive the flower:
+
+- **UV**: Reflects mainly ultraviolet
+- **blue**: Reflects mainly blue wavelengths
+- **blue-green**: Reflects blue and green
+- **UV-blue**: Appears "bee purple"
+- **UV-green**: Unique to bee vision
+- **white**: Broad spectrum reflection
+
+## Additional Endpoints
+
+### List Families
+
+```bash
+GET /v1/flowers/families
+```
+
+Returns all plant families with sample counts.
+
+### List Human Colors
+
+```bash
+GET /v1/flowers/human-colours
+```
+
+Returns all human-perceived color categories.
+
+### List Bee Colors
+
+```bash
+GET /v1/flowers/bee-colours
+```
+
+Returns all bee-perceived color categories.
+
+### Get Flower by ID
+
+```bash
+GET /v1/flowers/{id}
+```
+
+Returns complete record including spectral color space coordinates.
+
+## Data Citation
+
+This endpoint uses data from the Floral Reflectance Database (FReD):
+
+> Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database — A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287
+
+## Error Handling
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 400 | Invalid color format |
+| 404 | Flower ID not found (for `/{id}` endpoint) |
+| 503 | Database not available |
