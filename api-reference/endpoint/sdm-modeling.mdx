@@ -12,6 +12,8 @@ The SDM (Species Distribution Modeling) endpoints generate predictive models sho
 
 <ParamField body="species_name" type="string" required>
   Scientific name of the species to model (e.g., "Eucalyptus regnans")
+
+  <Note>Species names are automatically validated and corrected using TNRS (Taxonomic Name Resolution Service) before processing. Capitalization errors and minor misspellings are automatically corrected.</Note>
 </ParamField>
 
 <ParamField body="gcm" type="string" default="mpi-esm1-2-hr">
