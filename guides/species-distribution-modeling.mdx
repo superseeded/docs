@@ -15,9 +15,9 @@ The modeling process combines species occurrence records with environmental vari
 
 The API uses two primary data sources:
 
-**Species occurrence records**: Downloaded from GBIF, these are GPS coordinates where the species has been observed. The system requires at least 30 occurrence points for MaxEnt modeling. Species with fewer records use simplified niche modeling.
+**Species occurrence records**: Downloaded from GBIF using taxonomy-resolved searches that include synonyms. The system fetches up to 20,000 records per species and requires at least 30 occurrence points for MaxEnt modeling. Species with fewer records use simplified niche modeling.
 
-**Climate data**: CHELSA version 2.1 provides 19 bioclimatic variables at 1-kilometer resolution. The API uses bio01 (annual mean temperature) as the primary variable, with data available for historical baseline (1981-2010) and future projections.
+**Climate data**: CHELSA version 2.1 provides all 19 bioclimatic variables at 1-kilometer resolution, covering temperature and precipitation patterns. Data is available for the historical baseline (1981-2010) and future projections. Automated variable selection reduces these to the most informative subset (typically 5-8 variables) by removing highly correlated pairs and multicollinear predictors.
 
 ### Climate scenarios
 
@@ -76,7 +76,7 @@ Several factors affect model accuracy:
 
 **Data quality**: Models depend on occurrence record quality and completeness. Species with limited observations or biased sampling produce less reliable predictions.
 
-**Climate variables**: Using only temperature (bio01) simplifies complex ecological relationships. Full implementations should incorporate precipitation, soil, and topographic variables.
+**Climate variables**: The model uses bioclimatic variables derived from temperature and precipitation. Soil type, topography, and land use are not currently included.
 
 **Dispersal capacity**: Models assume species can reach all suitable habitat. Natural dispersal limitations and barriers are not considered.
 
