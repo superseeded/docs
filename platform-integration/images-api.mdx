@@ -1,0 +1,162 @@
+---
+title: "Images API"
+description: "Resolve catalog image URLs for storefront and product integrations"
+---
+
+## Overview
+
+Use the Images API when your commerce system needs SuperSeeded-hosted product imagery for plant catalog items.
+
+Your backend sends product and plant identifiers to SuperSeeded. The API returns image availability and, when an image is available, a public image URL that can be stored on the product or rendered in a storefront.
+
+<CardGroup cols={2}>
+  <Card title="Backend-first" icon="server">
+    Keep your API key on your server or plugin backend.
+  </Card>
+  <Card title="Storefront-ready" icon="image">
+    Return ordinary image URLs for product pages, grids, and feeds.
+  </Card>
+  <Card title="Site allowlist" icon="shield-check">
+    Register the storefront origins that may request images for your account.
+  </Card>
+  <Card title="No generation trigger" icon="circle-pause">
+    The endpoint only returns images that are already available.
+  </Card>
+</CardGroup>
+
+<Info>
+  This is a generic Images API. SuperSeeded commerce plugins may use it internally, but the API is not tied to any one platform.
+</Info>
+
+## How it works
+
+<Steps>
+  <Step title="Store the API key server-side">
+    Configure your SuperSeeded API key in your backend, integration service, or server-side commerce plugin settings. Do not expose it in browser JavaScript.
+  </Step>
+  <Step title="Register a storefront origin">
+    Register each storefront URL that should be allowed to resolve images for your account.
+  </Step>
+  <Step title="Resolve product images">
+    Send product IDs, SKUs, and plant identifiers to the resolve endpoint.
+  </Step>
+  <Step title="Use public image URLs">
+    If an image is available, store or render the returned `image_url`. If it is missing, keep your existing product image.
+  </Step>
+</Steps>
+
+## Authentication
+
+All Images API calls use your SuperSeeded API key:
+
+```bash
+X-API-Key: sk-sup-v1*****************************************
+```
+
+<Warning>
+  Store the API key only on your server. Public storefront pages should receive only the returned image URLs.
+</Warning>
+
+## Register a storefront origin
+
+Register each site that may resolve images for your account. The API normalizes the origin, so paths and query strings are ignored.
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/retail-images/sites \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-sup-v1*****************************************" \
+  -d '{
+    "site_url": "https://example-garden-centre.com",
+    "label": "Example Garden Centre"
+  }'
+```
+
+Example response:
+
+```json
+{
+  "site_url": "https://example-garden-centre.com",
+  "normalized_origin": "https://example-garden-centre.com",
+  "active": true
+}
+```
+
+## Resolve images
+
+Send a batch of product items. Each item should include either `species_key` or `botanical_name`; `product_id` and `sku` are echoed back so you can map results to your catalog rows.
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/retail-images/resolve \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-sup-v1*****************************************" \
+  -d '{
+    "site_url": "https://example-garden-centre.com",
+    "items": [
+      {
+        "product_id": 15133,
+        "sku": "ACM-200",
+        "botanical_name": "Acacia melanoxylon"
+      }
+    ]
+  }'
+```
+
+Example response:
+
+```json
+{
+  "site_url": "https://example-garden-centre.com",
+  "normalized_origin": "https://example-garden-centre.com",
+  "results": [
+    {
+      "product_id": 15133,
+      "sku": "ACM-200",
+      "species_key": "Acacia melanoxylon",
+      "species_hash": "opaque-image-id",
+      "status": "available",
+      "image_url": "https://images.example.com/catalog/image.png",
+      "thumbnail_url": null,
+      "version": "current",
+      "source_status": "published",
+      "message": null
+    }
+  ]
+}
+```
+
+## Result statuses
+
+| Status | Meaning | Suggested integration behavior |
+|--------|---------|--------------------------------|
+| `available` | A public image URL is available. | Save or render `image_url`. |
+| `missing` | No image is available for that item yet. | Keep the existing product image. |
+| `invalid` | The source image could not be used. | Keep the existing product image and log the item for review. |
+
+## Public image URLs
+
+The returned `image_url` is intended for public storefront display. Anyone with the URL can request that image, so do not treat it as a private download link.
+
+Public URLs are suitable for:
+
+- Product detail pages
+- Category grids
+- Search results
+- Merchant-controlled product feeds
+
+They are not suitable for:
+
+- Hiding unreleased products
+- Enforcing customer-specific access
+- Storing private assets
+
+## Integration notes
+
+- Keep the API key server-side.
+- Register every storefront origin before resolving images for that site.
+- Batch requests when syncing product catalogs.
+- Treat `missing` as a normal response and fall back to your existing product image.
+- Do not call the Images API from unauthenticated browser code.
+
+## Related reference
+
+See [Images API](/api-reference/endpoint/retail-images) for request and response fields.

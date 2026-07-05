@@ -1,0 +1,80 @@
+---
+title: "Images API"
+openapi: "POST /retail-images/resolve"
+---
+
+Resolve public product image URLs for plant catalog items.
+
+## Overview
+
+The Images API supports backend catalog and storefront integrations. Use it to register allowed storefront origins and resolve product image availability for plant items.
+
+<Info>
+  These endpoints are generic Images API endpoints. They are not specific to any one commerce platform or plugin.
+</Info>
+
+## Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /v1/retail-images/sites` | Register or update a storefront origin for your account. |
+| `POST /v1/retail-images/resolve` | Resolve image availability and public image URLs for product items. |
+
+## Authentication
+
+Use your SuperSeeded API key in the `X-API-Key` header.
+
+```bash
+X-API-Key: sk-sup-v1*****************************************
+```
+
+<Warning>
+  Do not expose API keys in frontend code. Send requests from your backend or server-side integration.
+</Warning>
+
+## Register Site
+
+Register a storefront origin before resolving images for that site.
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/retail-images/sites \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-sup-v1*****************************************" \
+  -d '{
+    "site_url": "https://example-garden-centre.com",
+    "label": "Example Garden Centre"
+  }'
+```
+
+## Resolve Images
+
+```bash
+curl -X POST https://api.superseeded.ai/v1/retail-images/resolve \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-sup-v1*****************************************" \
+  -d '{
+    "site_url": "https://example-garden-centre.com",
+    "items": [
+      {
+        "product_id": 15133,
+        "sku": "ACM-200",
+        "botanical_name": "Acacia melanoxylon"
+      }
+    ]
+  }'
+```
+
+## Status Values
+
+| Status | Description |
+|--------|-------------|
+| `available` | `image_url` is present and can be used in a storefront. |
+| `missing` | No image is available for the item. Use your fallback product image. |
+| `invalid` | An image was found but could not be returned. Use your fallback product image. |
+
+## Security Notes
+
+- Public image URLs are display URLs, not private download URLs.
+- Keep API keys server-side.
+- Register only storefront origins that belong to your account.
+- Do not depend on public image URL secrecy for authorization.

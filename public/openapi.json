@@ -33,6 +33,10 @@
     {
       "name": "System",
       "description": "Health checks and service status."
+    },
+    {
+      "name": "Images",
+      "description": "Resolve public catalog image URLs for storefront and product integrations."
     }
   ],
   "paths": {
@@ -421,6 +425,97 @@
           },
           "404": {
             "description": "Flower not found"
+          }
+        }
+      }
+    },
+    "/retail-images/sites": {
+      "post": {
+        "tags": ["Images"],
+        "summary": "Register Storefront Origin",
+        "description": "Register or update a storefront origin allowed to resolve public catalog image URLs for the authenticated account.",
+        "operationId": "registerImageSite",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageSiteRegistrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Storefront origin registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageSiteRegistrationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid site URL."
+          },
+          "401": {
+            "description": "Missing API key."
+          },
+          "403": {
+            "description": "Invalid, inactive, or expired API key."
+          }
+        }
+      }
+    },
+    "/retail-images/resolve": {
+      "post": {
+        "tags": ["Images"],
+        "summary": "Resolve Catalog Images",
+        "description": "Resolve image availability and public image URLs for plant catalog items. This endpoint returns already available imagery and does not trigger new image generation.",
+        "operationId": "resolveCatalogImages",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image availability resolved for each item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageResolveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request."
+          },
+          "401": {
+            "description": "Missing API key."
+          },
+          "403": {
+            "description": "Invalid API key or unregistered storefront origin."
+          },
+          "500": {
+            "description": "Image service configuration error."
           }
         }
       }
@@ -1149,6 +1244,158 @@
             "Name validated against 9 authoritative botanical databases",
             "Confirmed by: Taxonomic Name Resolution Service (WFO), Plants of the World Online (Kew Gardens), Global Biodiversity Information Facility"
           ]
+        }
+      },
+      "ImageSiteRegistrationRequest": {
+        "type": "object",
+        "required": ["site_url"],
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Storefront URL to register for this account. Paths and query strings are normalized to the site origin."
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional human-readable name for the storefront."
+          }
+        }
+      },
+      "ImageSiteRegistrationResponse": {
+        "type": "object",
+        "required": ["site_url", "normalized_origin", "active"],
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "normalized_origin": {
+            "type": "string",
+            "description": "Canonical storefront origin allowed for image resolution."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ImageResolveItem": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Optional catalog product ID echoed in the result."
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional SKU echoed in the result."
+          },
+          "species_key": {
+            "type": "string",
+            "nullable": true,
+            "description": "Plant identifier used by your catalog or integration."
+          },
+          "botanical_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Botanical name to use when species_key is not provided."
+          },
+          "product_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional product name for your own correlation."
+          }
+        }
+      },
+      "ImageResolveRequest": {
+        "type": "object",
+        "required": ["site_url", "items"],
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Registered storefront URL for this request."
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/ImageResolveItem"
+            }
+          }
+        }
+      },
+      "ImageResolveResult": {
+        "type": "object",
+        "required": ["status", "source_status"],
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "species_key": {
+            "type": "string",
+            "nullable": true
+          },
+          "species_hash": {
+            "type": "string",
+            "nullable": true,
+            "description": "Stable opaque identifier for the resolved plant image."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["available", "missing", "invalid"],
+            "description": "Image availability status."
+          },
+          "image_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Public image URL when status is available."
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Optional public thumbnail URL when available."
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "source_status": {
+            "type": "string",
+            "description": "High-level source status for the resolved image."
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ImageResolveResponse": {
+        "type": "object",
+        "required": ["site_url", "normalized_origin", "results"],
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "normalized_origin": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageResolveResult"
+            }
+          }
         }
       }
     },
