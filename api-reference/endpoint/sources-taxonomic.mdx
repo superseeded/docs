@@ -38,6 +38,9 @@ No authentication or request body required.
     <ResponseField name="cache_ttl_hours" type="integer">
       How long results from this source are cached, in hours.
     </ResponseField>
+    <ResponseField name="backbone_version" type="string">
+      Version of a fixed taxonomic backbone used to produce reproducible results. Currently returned for APC/APNI.
+    </ResponseField>
     <ResponseField name="fallback_only" type="boolean">
       If `true`, this source is only queried when all other sources return no match. Only applies to Gemini AI.
     </ResponseField>

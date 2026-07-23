@@ -33,6 +33,15 @@ The API queries APC/APNI and 11 botanical databases in parallel and consolidates
   </Step>
 </Steps>
 
+### Interpreting APC/APNI Results
+
+APC/APNI resolution is intentionally conservative:
+
+- An exact accepted name or explicit synonym link can be returned as `validated`.
+- A spelling correction, APNI-only name, higher-taxon fallback, taxonomic split, or disagreement is returned as `uncertain` and sets `review_required: true`.
+- When more than one taxon is plausible, inspect `alternatives`; the API does not silently choose a review-required result.
+- Record `backbone_version` and `resolver_version` if the resolution needs to be reproduced or audited later.
+
 ### Validation Status
 
 Each species name receives a clear validation status based on source consensus:
