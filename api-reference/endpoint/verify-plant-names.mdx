@@ -11,6 +11,12 @@ This endpoint queries APC/APNI and 11 botanical databases in parallel, consolida
 
 Sources queried: APC/APNI, GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia.
 
+### Australian name resolution
+
+For names found in APC or APNI, SuperSeeded uses an [open-source Rust port of APCalign](https://github.com/superseeded/apcalign-rs). It follows APCalign's ordered approach to accepted names, synonyms, spelling variants, authorship, infraspecific ranks, hybrids, phrase names, and conservative typo correction against a fixed backbone release.
+
+This makes the result predictable and reviewable: exact APC accepted names and explicit synonym links can validate directly, while spelling corrections, APNI-only names, taxonomic splits, and ambiguous matches set `review_required: true`. Check `alternatives` before selecting a taxon when review is required. The `backbone_version` and `resolver_version` fields identify the data and resolver versions used for the result.
+
 ## Input Options
 
 This endpoint accepts input in three ways:

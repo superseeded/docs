@@ -977,10 +977,15 @@
       },
       "TaxonomicResolution": {
         "type": "object",
+        "description": "Versioned APC/APNI name alignment. Exact accepted names and explicit synonym links may validate directly; conservative corrections, APNI-only names, splits and ambiguous results require review.",
+        "externalDocs": {
+          "description": "Open-source resolver, attribution and compatibility details",
+          "url": "https://github.com/superseeded/apcalign-rs"
+        },
         "required": ["backbone", "backbone_version", "match_kind", "review_required"],
         "properties": {
           "backbone": {"type": "string", "example": "APC/APNI"},
-          "backbone_version": {"type": "string", "example": "2026-03-25"},
+          "backbone_version": {"type": "string", "description": "Pinned APC/APNI release used for this result", "example": "2026-03-25"},
           "aligned_name": {"type": "string", "nullable": true},
           "suggested_name": {"type": "string", "nullable": true},
           "match_kind": {"type": "string", "description": "Typed exact, synonym, fuzzy, APNI, ambiguous or higher-taxon match"},
