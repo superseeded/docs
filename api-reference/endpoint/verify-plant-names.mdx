@@ -7,7 +7,7 @@ Validate complete botanical name strings against the versioned Australian Plant 
 
 ## Overview
 
-This endpoint queries 11 botanical databases by default, consolidates authoritative results, and returns a unified taxonomic record per input. APC/APNI is available through explicit `apc_apni` source selection. Exact APC accepted names and explicit synonym links can validate independently. Fuzzy, APNI-only, split, and conflicting results remain uncertain until corroborated or reviewed. Names that no authoritative source resolves may receive a Gemini suggestion, but AI never participates in consensus or species identity.
+This endpoint queries APC/APNI and 11 botanical databases in parallel, consolidates authoritative results, and returns a unified taxonomic record per input. Exact APC accepted names and explicit synonym links can validate independently. Fuzzy, APNI-only, split, and conflicting results remain uncertain until corroborated or reviewed. Names that no authoritative source resolves may receive a Gemini suggestion, but AI never participates in consensus or species identity.
 
 Sources queried: APC/APNI, GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia.
 
@@ -76,7 +76,7 @@ curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
 </ParamField>
 
 <ParamField body="sources" type="string[]">
-  Specific authoritative sources to query. Defaults to the 11 existing non-Gemini sources. Add `apc_apni` explicitly to request versioned Australian name resolution. Explicit lists are honored. Gemini is not a consensus source.
+  Specific authoritative sources to query. Defaults to APC/APNI plus all 11 existing non-Gemini sources. Explicit lists are honored. Gemini is not a consensus source.
 
   Available: `apc_apni`, `gbif`, `tnrs`, `powo`, `inaturalist`, `eol`, `ala`, `ip_australia`, `upov`, `wikispecies`, `wikidata`, `wikipedia`
 </ParamField>
@@ -247,8 +247,6 @@ The response contains an array of unified taxonomic records and a summary.
 </ResponseField>
 
 ## Example Response
-
-This example includes `apc_apni` in the request's `sources` list.
 
 ```json
 {

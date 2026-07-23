@@ -868,7 +868,7 @@
               "type": "string",
               "enum": ["apc_apni", "gbif", "tnrs", "powo", "inaturalist", "eol", "ala", "ip_australia", "upov", "wikispecies", "wikidata", "wikipedia"]
             },
-            "description": "Specific authoritative sources to attempt. Defaults to the 11 existing non-Gemini sources; add apc_apni explicitly for versioned Australian name resolution. Gemini is never a consensus source and is used only for additive review suggestions.",
+            "description": "Specific authoritative sources to attempt. Defaults to APC/APNI and all 11 existing sources. Gemini is never a consensus source and is used only for additive review suggestions.",
             "example": ["apc_apni", "gbif", "tnrs", "powo"]
           },
           "include_metadata": {
