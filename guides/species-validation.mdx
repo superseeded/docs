@@ -16,11 +16,11 @@ The Species Name Validation API ensures data quality in plant schedules and bota
 
 ### Multi-Source Validation with Consensus Scoring
 
-The API queries APC/APNI and 11 botanical databases in parallel and consolidates authoritative results into one unified taxonomic record.
+The API queries 11 botanical databases by default and consolidates authoritative results into one unified taxonomic record. Add `apc_apni` to the request's `sources` list when versioned Australian name resolution is required.
 
 <Steps>
   <Step title="Parallel Database Search">
-    APC/APNI and the 11 existing taxonomic databases are queried simultaneously for each name, unless you provide an explicit `sources` list.
+    The 11 default taxonomic databases are queried simultaneously for each name. Explicit `sources` lists are honored, including `apc_apni`.
   </Step>
   <Step title="Consensus Scoring">
     Results are consolidated using an algorithm that favours authoritative sources to determine the accepted scientific name.
