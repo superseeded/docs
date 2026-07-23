@@ -160,7 +160,7 @@
       "post": {
         "tags": ["Validation"],
         "summary": "Verify Plant Names",
-        "description": "Validate botanical species names against 11 authoritative taxonomic databases with AI fallback. Queries GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, and Wikipedia in parallel. Returns unified taxonomic records with consensus scoring. Accepts input as: (1) JSON body with species_names array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload.",
+        "description": "Validate complete botanical name strings against APC/APNI and 11 global taxonomic sources. AI fallback suggestions are review-only and never participate in consensus. Existing response fields are preserved; versioned taxonomic resolution details are additive.",
         "operationId": "verifyPlantNames",
         "security": [
           {
@@ -224,7 +224,7 @@
       "get": {
         "tags": ["Validation"],
         "summary": "List Taxonomic Sources",
-        "description": "Returns metadata about all 12 taxonomic data sources used by the species validation system, including authority weights and cache durations. No authentication required.",
+        "description": "Returns metadata about all 13 taxonomic data sources used by the species validation system, including APC/APNI, authority weights and cache durations. No authentication required.",
         "operationId": "listTaxonomicSources",
         "responses": {
           "200": {
@@ -866,10 +866,10 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": ["gbif", "tnrs", "powo", "inaturalist", "eol", "ala", "ip_australia", "upov", "wikispecies", "wikidata", "wikipedia"]
+              "enum": ["apc_apni", "gbif", "tnrs", "powo", "inaturalist", "eol", "ala", "ip_australia", "upov", "wikispecies", "wikidata", "wikipedia"]
             },
-            "description": "Specific sources to query. Defaults to all 11 sources (excludes gemini AI fallback). Gemini is only used when all other sources return no match.",
-            "example": ["gbif", "tnrs", "powo"]
+            "description": "Specific authoritative sources to attempt. Defaults to APC/APNI and all 11 existing sources. Gemini is never a consensus source and is used only for additive review suggestions.",
+            "example": ["apc_apni", "gbif", "tnrs", "powo"]
           },
           "include_metadata": {
             "type": "boolean",
@@ -933,14 +933,15 @@
         "example": {
           "sources": [
             {
-              "id": "tnrs",
-              "name": "Taxonomic Name Resolution Service (WFO)",
-              "description": "World Flora Online taxonomic authority",
+              "id": "apc_apni",
+              "name": "Australian Plant Census / APNI",
+              "description": "Versioned APC accepted names, synonyms and APNI fallback",
               "authority_weight": 1.0,
-              "cache_ttl_hours": 720
+              "cache_ttl_hours": 720,
+              "backbone_version": "2026-03-25"
             }
           ],
-          "total": 12
+          "total": 13
         }
       },
       "TaxonomicSource": {
@@ -972,6 +973,32 @@
             "type": "boolean",
             "description": "If true, only used when all other sources return no match (Gemini AI only)"
           }
+        }
+      },
+      "TaxonomicResolution": {
+        "type": "object",
+        "required": ["backbone", "backbone_version", "match_kind", "review_required"],
+        "properties": {
+          "backbone": {"type": "string", "example": "APC/APNI"},
+          "backbone_version": {"type": "string", "example": "2026-03-25"},
+          "aligned_name": {"type": "string", "nullable": true},
+          "suggested_name": {"type": "string", "nullable": true},
+          "match_kind": {"type": "string", "description": "Typed exact, synonym, fuzzy, APNI, ambiguous or higher-taxon match"},
+          "alignment_code": {"type": "string", "nullable": true},
+          "taxonomic_dataset": {"type": "string", "enum": ["APC", "APNI"], "nullable": true},
+          "alternatives": {"type": "array", "items": {"type": "string"}},
+          "review_required": {"type": "boolean"}
+        }
+      },
+      "ReviewSuggestion": {
+        "type": "object",
+        "required": ["source", "review_required"],
+        "properties": {
+          "source": {"type": "string", "enum": ["gemini"]},
+          "suggested_name": {"type": "string", "nullable": true},
+          "confidence": {"type": "string", "nullable": true},
+          "review_required": {"type": "boolean", "enum": [true]},
+          "details": {"type": "object", "additionalProperties": true}
         }
       },
       "UnifiedTaxonomicRecord": {
@@ -1016,7 +1043,7 @@
               },
               "sources_checked": {
                 "type": "integer",
-                "description": "Number of sources that returned results"
+                "description": "Number of authoritative sources attempted, including sources that returned no match or failed"
               },
               "sources_matched": {
                 "type": "integer",
@@ -1035,8 +1062,28 @@
                     "type": "integer"
                   }
                 }
+              },
+              "source_failures": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Attempted source identifiers that failed independently of no-match results"
               }
             }
+          },
+          "resolution": {
+            "allOf": [{"$ref": "#/components/schemas/TaxonomicResolution"}],
+            "nullable": true,
+            "description": "Additive APC/APNI resolution details when that source aligned the name"
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/ReviewSuggestion"},
+            "description": "Review-required AI suggestions. These never set accepted_name or validation consensus."
+          },
+          "source_failures": {
+            "type": "array",
+            "items": {"type": "object", "additionalProperties": true},
+            "description": "Per-source operational failures, separate from authoritative no-match results"
           },
           "accepted_name": {
             "type": "object",
@@ -1166,6 +1213,10 @@
               "processing_time_seconds": {
                 "type": "number",
                 "description": "Processing time"
+              },
+              "resolver_version": {
+                "type": "string",
+                "description": "APCalign Rust resolver version when resolution is present"
               }
             }
           },
@@ -1194,7 +1245,7 @@
             "status": "validated",
             "confidence": "high",
             "consensus_score": 0.98,
-            "sources_checked": 11,
+            "sources_checked": 12,
             "sources_matched": 9,
             "match_summary": {
               "exact_matches": 8,

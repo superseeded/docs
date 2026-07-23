@@ -7,7 +7,7 @@ List all available taxonomic data sources used by the species validation system,
 
 ## Overview
 
-This endpoint returns metadata about the 12 taxonomic sources used by the `/v1/verify/plant-names` endpoint. Use it to understand which databases are queried, their relative authority in the consensus algorithm, and how long results are cached.
+This endpoint returns metadata about the 13 sources available to `/v1/verify/plant-names`: 12 authoritative data sources, including the versioned APC/APNI backbone, plus review-only Gemini suggestions.
 
 ## Request
 
@@ -53,6 +53,14 @@ No authentication or request body required.
 ```json
 {
   "sources": [
+    {
+      "id": "apc_apni",
+      "name": "Australian Plant Census / APNI",
+      "description": "Versioned APC accepted names, synonyms and APNI fallback",
+      "authority_weight": 1.0,
+      "cache_ttl_hours": 720,
+      "backbone_version": "2026-03-25"
+    },
     {
       "id": "tnrs",
       "name": "Taxonomic Name Resolution Service (WFO)",
@@ -139,7 +147,7 @@ No authentication or request body required.
       "fallback_only": true
     }
   ],
-  "total": 12
+  "total": 13
 }
 ```
 
@@ -149,6 +157,7 @@ Sources are ranked by authority in the consensus algorithm:
 
 | Source | Weight | Role |
 |--------|--------|------|
+| APC/APNI | 1.00 | Australian accepted names, synonyms and nomenclature |
 | TNRS (WFO) | 1.00 | Taxonomic authority |
 | POWO (Kew) | 0.95 | Botanical authority |
 | GBIF | 0.85 | Biodiversity database |
@@ -172,3 +181,4 @@ Each source has a cache TTL tuned to its update frequency:
 - **7 days**: IP Australia, UPOV, WikiSpecies, Wikidata, Wikipedia (data changes infrequently)
 - **10 days**: Gemini AI (AI-generated data, stable period)
 - **30 days**: TNRS/WFO (authoritative taxonomy, changes rarely)
+- **Pinned release**: APC/APNI follows the declared backbone version (`2026-03-25`)
