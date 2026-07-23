@@ -3,13 +3,13 @@ title: 'Verify Plant Names'
 openapi: 'POST /verify/plant-names'
 ---
 
-Validate botanical species names against 11 authoritative taxonomic databases with Gemini AI fallback. Returns unified taxonomic records with consensus scoring.
+Validate complete botanical name strings against the versioned Australian Plant Census/APNI backbone and 11 global taxonomic sources. Existing response fields remain stable; APC/APNI resolution and review-only AI suggestions are additive.
 
 ## Overview
 
-This endpoint queries 11 botanical databases in parallel, consolidates results using a weighted consensus algorithm, and returns a unified taxonomic record per species. Names that no source can resolve are sent to Google Gemini AI as a corrective fallback.
+This endpoint queries APC/APNI and 11 botanical databases in parallel, consolidates authoritative results, and returns a unified taxonomic record per input. Exact APC accepted names and explicit synonym links can validate independently. Fuzzy, APNI-only, split, and conflicting results remain uncertain until corroborated or reviewed. Names that no authoritative source resolves may receive a Gemini suggestion, but AI never participates in consensus or species identity.
 
-Sources queried: GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia.
+Sources queried: APC/APNI, GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA, IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia.
 
 ## Input Options
 
@@ -58,7 +58,7 @@ curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
 ## Request Body (JSON)
 
 <ParamField body="species_names" type="string[]">
-  An array of species name strings to validate. Takes precedence over file inputs.
+  An array of complete plant-name strings to validate. Authorship, infraspecific ranks, hybrid markers, cultivars, and phrase names are preserved. Takes precedence over file inputs.
 </ParamField>
 
 <ParamField body="file_url" type="file">
@@ -76,9 +76,9 @@ curl -X POST https://api.superseeded.ai/v1/verify/plant-names \
 </ParamField>
 
 <ParamField body="sources" type="string[]">
-  Specific sources to query. Defaults to all 11 non-Gemini sources. Gemini is always a fallback-only source.
+  Specific authoritative sources to query. Defaults to APC/APNI plus all 11 existing non-Gemini sources. Explicit lists are honored. Gemini is not a consensus source.
 
-  Available: `gbif`, `tnrs`, `powo`, `inaturalist`, `eol`, `ala`, `ip_australia`, `upov`, `wikispecies`, `wikidata`, `wikipedia`
+  Available: `apc_apni`, `gbif`, `tnrs`, `powo`, `inaturalist`, `eol`, `ala`, `ip_australia`, `upov`, `wikispecies`, `wikidata`, `wikipedia`
 </ParamField>
 
 <ParamField body="include_metadata" type="boolean" default="true">
@@ -137,7 +137,7 @@ The response contains an array of unified taxonomic records and a summary.
           0.0-1.0 score based on source agreement.
         </ResponseField>
         <ResponseField name="sources_checked" type="integer">
-          Number of sources that returned results.
+          Number of authoritative sources attempted, including no-match and failed sources.
         </ResponseField>
         <ResponseField name="sources_matched" type="integer">
           Number of sources with a match.
@@ -145,7 +145,22 @@ The response contains an array of unified taxonomic records and a summary.
         <ResponseField name="match_summary" type="object">
           Counts of exact_matches, inexact_matches, no_match.
         </ResponseField>
+        <ResponseField name="source_failures" type="string[]">
+          Attempted sources that failed independently of no-match results.
+        </ResponseField>
       </Expandable>
+    </ResponseField>
+
+    <ResponseField name="resolution" type="object">
+      Optional APC/APNI resolution containing `backbone`, `backbone_version`, `aligned_name`, `suggested_name`, `match_kind`, `alignment_code`, `taxonomic_dataset`, `alternatives`, and `review_required`.
+    </ResponseField>
+
+    <ResponseField name="suggestions" type="object[]">
+      Review-required AI suggestions. AI-only responses remain `not_found`, have no accepted name, and are never synchronized into species identity.
+    </ResponseField>
+
+    <ResponseField name="source_failures" type="object[]">
+      Operational source failures, reported separately from authoritative no-match results.
     </ResponseField>
 
     <ResponseField name="accepted_name" type="object">
@@ -206,6 +221,7 @@ The response contains an array of unified taxonomic records and a summary.
         <ResponseField name="quality_score" type="number">Overall data quality (0.0-1.0).</ResponseField>
         <ResponseField name="api_version" type="string">API version.</ResponseField>
         <ResponseField name="processing_time_seconds" type="number">Processing time.</ResponseField>
+        <ResponseField name="resolver_version" type="string">APCalign Rust resolver version, when used.</ResponseField>
       </Expandable>
     </ResponseField>
 
@@ -245,14 +261,28 @@ The response contains an array of unified taxonomic records and a summary.
         "status": "validated",
         "confidence": "high",
         "consensus_score": 0.98,
-        "sources_checked": 11,
+        "sources_checked": 12,
         "sources_matched": 9,
         "match_summary": {
           "exact_matches": 8,
           "inexact_matches": 1,
-          "no_match": 0
-        }
+          "no_match": 2
+        },
+        "source_failures": []
       },
+      "resolution": {
+        "backbone": "APC/APNI",
+        "backbone_version": "2026-03-25",
+        "aligned_name": "Eucalyptus globulus",
+        "suggested_name": "Eucalyptus globulus Labill.",
+        "match_kind": "exact_accepted",
+        "alignment_code": "match_01c_accepted_canonical_name",
+        "taxonomic_dataset": "APC",
+        "alternatives": ["Eucalyptus globulus Labill."],
+        "review_required": false
+      },
+      "suggestions": [],
+      "source_failures": [],
       "accepted_name": {
         "scientific_name": "Eucalyptus globulus",
         "author": "Labill.",
@@ -289,7 +319,8 @@ The response contains an array of unified taxonomic records and a summary.
         "version": "1.0",
         "api_version": "1.0.0",
         "quality_score": 0.9,
-        "processing_time_seconds": 4.67
+        "processing_time_seconds": 4.67,
+        "resolver_version": "0.1.0"
       },
       "warnings": [],
       "notes": [

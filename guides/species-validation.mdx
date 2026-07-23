@@ -1,11 +1,11 @@
 ---
 title: 'Species Name Validation'
-description: 'Validate botanical species names against 11 authoritative taxonomic databases with AI fallback'
+description: 'Resolve complete botanical names against APC/APNI and global taxonomic sources'
 ---
 
 ## Overview
 
-The Species Name Validation API ensures data quality in plant schedules and botanical datasets by validating species names against 11 authoritative databases. This is essential for:
+The Species Name Validation API ensures data quality in plant schedules and botanical datasets by resolving complete name strings against a pinned APC/APNI backbone and 11 global taxonomic sources. It preserves authorship, ranks, hybrids, cultivars, and phrase names.
 
 - **Plant schedule validation** before procurement
 - **Data quality assurance** in botanical datasets
@@ -16,17 +16,17 @@ The Species Name Validation API ensures data quality in plant schedules and bota
 
 ### Multi-Source Validation with Consensus Scoring
 
-The API queries 11 botanical databases in parallel and consolidates the results into a single unified taxonomic record using consensus scoring.
+The API queries APC/APNI and 11 botanical databases in parallel and consolidates authoritative results into one unified taxonomic record.
 
 <Steps>
   <Step title="Parallel Database Search">
-    All 11 taxonomic databases are queried simultaneously for each species name.
+    APC/APNI and the 11 existing taxonomic databases are queried simultaneously for each name, unless you provide an explicit `sources` list.
   </Step>
   <Step title="Consensus Scoring">
     Results are consolidated using an algorithm that favours authoritative sources to determine the accepted scientific name.
   </Step>
-  <Step title="AI Fallback">
-    Any names with zero matches across all databases are sent to an AI model for corrective resolution of misspellings or loose descriptions.
+  <Step title="Review Suggestions">
+    A name with zero authoritative matches may receive an AI suggestion. It remains `not_found`; the suggestion cannot affect consensus or species identity.
   </Step>
   <Step title="Unified Record">
     Each species receives a single unified taxonomic record with validation status, accepted name, taxonomy, cross-references, and quality score.
@@ -41,7 +41,7 @@ Each species name receives a clear validation status based on source consensus:
   <Card title="Validated" icon="check" color="#10b981">
     **High confidence**
 
-    Multiple sources agree on the accepted name. Ready for use in plant schedules.
+    Multiple sources agree, or APC provides an exact accepted-name or explicit synonym link. Ready for use in plant schedules.
   </Card>
   <Card title="Uncertain" icon="exclamation-triangle" color="#f59e0b">
     **Medium confidence**
@@ -109,7 +109,7 @@ For botanical datasets, validation identifies questionable entries:
 ```
 
 - `Eucalyptus globulus` — Validated across multiple sources
-- `Eucalyptus globular` — AI fallback may suggest the correct spelling
+- `Eucalyptus globular` — conservative resolution or an AI review suggestion may identify the intended spelling
 - `Unknown species xyz` — Returned as not found with warnings
 
 ## Data Sources
@@ -117,6 +117,11 @@ For botanical datasets, validation identifies questionable entries:
 ### Authoritative Taxonomic Databases
 
 <CardGroup cols={2}>
+  <Card title="APC/APNI" icon="leaf" href="https://biodiversity.org.au/nsl/services/apc">
+    **Australian Plant Census / Australian Plant Name Index**
+
+    Pinned accepted names, synonym links, nomenclature, and conservative spelling alignment.
+  </Card>
   <Card title="TNRS (WFO)" icon="crown" href="https://tnrsapi.xyz">
     **World Flora Online**
 
@@ -173,9 +178,9 @@ For botanical datasets, validation identifies questionable entries:
 ### AI Fallback
 
 <Card title="AI Correction" icon="robot">
-  **Fallback only** — Used when all other sources return no match.
+  **Suggestion only** — Used when all authoritative sources return no match.
 
-  Corrects misspelled or loosely described plant names. Only resolves names from the Plantae kingdom.
+  Suggestions always set `review_required: true`, do not validate a name, and are never written to canonical species identity.
 </Card>
 
 ## Source Roles
@@ -184,6 +189,7 @@ The consensus algorithm prioritises authoritative taxonomic databases when deter
 
 | Source | Role |
 |--------|------|
+| APC/APNI | Australian accepted names, synonyms, and nomenclature |
 | TNRS (WFO) | Taxonomic authority |
 | POWO (Kew) | Botanical authority |
 | GBIF | Biodiversity database |
