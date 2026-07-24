@@ -1,0 +1,30 @@
+---
+title: "Supply resolution"
+description: "Create bounded nursery enquiry drafts, extract supplier replies for review, and rank validated substitution candidates."
+---
+
+Supply Resolution connects planting-design data to nursery confirmation workflows. These endpoints handle structured AI tasks only: they do not publish a request, accept a supplier response, or change a planting schedule.
+
+## Enquiry drafts
+
+`POST /v1/supply/enquiry-drafts` accepts a versioned `SupplyRequestSnapshot`. The request includes the project revision, delivery region and window, and immutable schedule lines.
+
+The response contains plain-text and HTML correspondence, the schedule-line references represented in the message, and `requires_approval: true`. Teams accounts may receive an AI-polished message. Other accounts receive the deterministic canonical draft.
+
+The drafting step cannot change species identities, quantities, grades, dates, regions, or requirements.
+
+## Supplier reply extraction
+
+`POST /v1/supply/reply-extractions` accepts untrusted email text together with the exact request lines it may reference. Extraction is bounded to those line identifiers and returns draft availability, quantities, grades, ready dates, alternatives, and confidence.
+
+Every extraction returns `requires_approval: true`. A separate authenticated supply command must record the designer's decision before the result can become schedule evidence.
+
+## Validated substitution ranking
+
+`POST /v1/supply/substitutions/search` ranks only the canonical candidate IDs supplied in `validated_candidates`. Apply non-negotiable botanical, site, regulatory, and design constraints before calling this endpoint.
+
+The endpoint can abstain, and it never invents a species or restores an excluded candidate.
+
+<Note>
+  The operational marketplace, correspondence, supplier responses, and decisions are private application workflows. These AI endpoints receive bounded snapshots and do not expose buyer or supplier records.
+</Note>
