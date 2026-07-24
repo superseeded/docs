@@ -1,58 +1,1485 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Superseeded API",
-    "description": "Modern nursery industry API for reconciling plant specifications, resolving equivalence and assessing logistical risks for plant stock.",
-    "version": "1.0.0",
-    "license": {
-      "name": "MIT"
-    },
-    "contact": {
-      "name": "Superseeded Support"
-    }
+    "title": "SuperSeeded API",
+    "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "https://api.superseeded.ai/v1",
-      "description": "Production Server"
-    }
-  ],
-  "tags": [
-    {
-      "name": "Resolvers",
-      "description": "Endpoints for cleaning, normalizing, and interpreting messy nursery data."
-    },
-    {
-      "name": "Validation",
-      "description": "Endpoints for validating botanical species names against taxonomic databases."
-    },
-    {
-      "name": "Flowers",
-      "description": "Search flowers by color using spectral reflectance data from the Floral Reflectance Database (FReD)."
-    },
-    {
-      "name": "System",
-      "description": "Health checks and service status."
-    },
-    {
-      "name": "Images",
-      "description": "Resolve public catalog image URLs for storefront and product integrations."
-    }
-  ],
   "paths": {
-    "/routes/from-upload": {
-      "get": {
-        "tags": ["System"],
-        "summary": "Route Discovery",
-        "description": "Returns a list of available API routes that can be called after a file upload completes. This allows integrations to dynamically discover what processing options are available.",
-        "operationId": "getRoutesFromUpload",
+    "/v1/verify/pot-sizes": {
+      "post": {
+        "summary": "Validate Pot Sizes Unified",
+        "description": "Check what size containers your plants need.\n\nThis endpoint helps you determine the appropriate container sizes for your plant\nspecifications. Simply provide plant descriptions or upload a plant schedule,\nand get back the recommended pot sizes and container requirements.\n\nAuthentication:\n- Basic/Pro plans: X-API-Key header sufficient\n- Teams plan (platform integration): Authorization Bearer token required\n\nThe endpoint automatically determines the merchant_id for billing:\n- API key auth: merchant_id = i_<user_id> (individual)\n- Delegation token: merchant_id from JWT claims (platform merchant)\n\nSupported file formats:\n- JSON: Direct parsing\n- XLSX, XLS: Excel spreadsheets\n- PDF: PDF documents\n- TXT: Plain text files\n- PNG, JPG, JPEG, GIF, WEBP: Images (via Gemini vision)\n\nFor direct file uploads (reduces round trips):\n```\ncurl -X POST https://api.superseeded.ai/v1/verify/pot-sizes \\\n  -H \"X-API-Key: sk_...\" \\\n  -F \"file=@plant_schedule.xlsx\" \\\n  -F \"extraction_type=pot_sizes\"\n```",
+        "operationId": "validate_pot_sizes_unified_v1_verify_pot_sizes_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "List of available post-upload processing routes",
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RouteDiscoveryResponse"
+                  "$ref": "#/components/schemas/ResolveSpecsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/": {
+      "get": {
+        "summary": "Read V1 Root",
+        "operationId": "read_v1_root_v1__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sdm/generate": {
+      "post": {
+        "tags": [
+          "Species Distribution Modeling"
+        ],
+        "summary": "Generate Sdm",
+        "description": "Generate species distribution model and suitability maps.\n\nThis endpoint forwards the request to the SDM service and returns a job ID\nfor tracking the generation progress.\n\nParameters:\n- species_name: Scientific name of the species to model\n- gcm: Global Climate Model (default: mpi-esm1-2-hr)\n- scenario: Emission scenario (default: ssp585)\n- period: Future time period (default: 2070)\n- threshold: Suitability threshold (default: 0.5)\n- include_gradient_maps: Generate gradient maps (default: True)",
+        "operationId": "generate_sdm_v1_sdm_generate_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SDMGenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SDMGenerateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sdm/status/{job_id}": {
+      "get": {
+        "tags": [
+          "Species Distribution Modeling"
+        ],
+        "summary": "Get Job Status",
+        "description": "Get the status of an SDM generation job.\n\nReturns the current status and results (if completed) for the specified job ID.",
+        "operationId": "get_job_status_v1_sdm_status__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SDMStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sdm/download/{job_id}/{file_type}": {
+      "get": {
+        "tags": [
+          "Species Distribution Modeling"
+        ],
+        "summary": "Download Result",
+        "description": "Download a result file from a completed SDM job.\n\nFile types:\n- change_plot: Suitability change map\n- current_gradient: Current climate suitability gradient\n- future_gradient: Future climate suitability gradient\n- trajectory_streamplot: Stability trajectory streamplot",
+        "operationId": "download_result_v1_sdm_download__job_id___file_type__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "file_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Type"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sdm/health": {
+      "get": {
+        "tags": [
+          "Species Distribution Modeling"
+        ],
+        "summary": "Sdm Health Check",
+        "description": "Check the health of the SDM service.",
+        "operationId": "sdm_health_check_v1_sdm_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/retail-images/sites": {
+      "post": {
+        "tags": [
+          "Retail Images"
+        ],
+        "summary": "Register Retail Image Site",
+        "operationId": "register_retail_image_site_v1_retail_images_sites_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetailImageSiteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailImageSiteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/retail-images/resolve": {
+      "post": {
+        "tags": [
+          "Retail Images"
+        ],
+        "summary": "Resolve Retail Images",
+        "operationId": "resolve_retail_images_v1_retail_images_resolve_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetailImageResolveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailImageResolveResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/generate/species-image": {
+      "post": {
+        "tags": [
+          "Species Image Generation"
+        ],
+        "summary": "Generate Species Image",
+        "description": "Generate or resolve a cached final species image.",
+        "operationId": "generate_species_image_v1_generate_species_image_post",
+        "parameters": [
+          {
+            "name": "camera-view",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Camera-View"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeciesImageGenerationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesImageGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/generate/species-image/{job_id}": {
+      "get": {
+        "tags": [
+          "Species Image Generation"
+        ],
+        "summary": "Get Species Image Generation Job",
+        "description": "Get generation status for a species image job.",
+        "operationId": "get_species_image_generation_job_v1_generate_species_image__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesImageGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/supply/enquiry-drafts": {
+      "post": {
+        "tags": [
+          "supply"
+        ],
+        "summary": "Create Enquiry Draft",
+        "operationId": "create_enquiry_draft_v1_supply_enquiry_drafts_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyRequestSnapshot"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/supply/reply-extractions": {
+      "post": {
+        "tags": [
+          "supply"
+        ],
+        "summary": "Extract Supplier Reply",
+        "operationId": "extract_supplier_reply_v1_supply_reply_extractions_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyExtractionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyExtraction"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/supply/substitutions/search": {
+      "post": {
+        "tags": [
+          "supply"
+        ],
+        "summary": "Rank Validated Substitutions",
+        "operationId": "rank_validated_substitutions_v1_supply_substitutions_search_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubstitutionSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubstitutionSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/validate-api-key": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Validate Api Key",
+        "description": "Validate an API key and return the account capabilities needed by integrations.",
+        "operationId": "validate_api_key_v1_auth_validate_api_key_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Validate Api Key",
+        "description": "Validate an API key and return the account capabilities needed by integrations.",
+        "operationId": "validate_api_key_v1_auth_validate_api_key_get",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/delegate-upload": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Delegate Upload",
+        "description": "Generate a secure upload token for frontend Uppy/TUS clients.\n\n**Requires:** Teams plan with `platform_integration_enabled`.\n\nBasic/Pro plans should use direct upload to `/v1/verify/pot-sizes` with\n`X-API-Key` header instead. Calling this endpoint with a Basic/Pro key\nreturns 403.\n\nSteps:\n1. Validate API Key\n2. Verify Teams plan with platform_integration_enabled\n3. Generate JWT with merchant_id claim for billing attribution\n4. Return { token: \"ey...\", expires_in: 300 }",
+        "operationId": "delegate_upload_v1_auth_delegate_upload_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelegateUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegateUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/lookup-email": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Lookup Email By Key",
+        "description": "Lookup user email by API key hash.\nThe API key is provided in the Authorization header.",
+        "operationId": "lookup_email_by_key_v1_auth_lookup_email_get",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/internal/tus-hook": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Tus Hook",
+        "description": "Receives completed file info from the parser.\n\nThis endpoint is called internally after file parsing is complete.\nThe request contains merchant_id and api_key_id extracted from the upload JWT.\n\n1. Extract rows from JSON (count line_items)\n2. Check metadata for origin\n3. Retrieve plan type for the API key\n4. Run process_usage_event with plan-aware billing\n5. Quid Pro Quo: Call enrich_stock_availability\n6. Return enriched data",
+        "operationId": "tus_hook_v1_internal_tus_hook_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TusHookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TusHookResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routes/from-upload": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "Discover Post Upload Routes",
+        "description": "Discover available post-upload processing routes.\n\nThis endpoint is public (no authentication required) to allow WordPress plugins\nand other integrations to discover available processing options before user\nauthentication.\n\nReturns:\n    DiscoverRoutesResponse with list of available routes and their metadata.",
+        "operationId": "discover_post_upload_routes_v1_routes_from_upload_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverRoutesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/verify/plant-names": {
+      "post": {
+        "tags": [
+          "species_validation"
+        ],
+        "summary": "Verify Plant Names Unified",
+        "description": "Verify that botanical plant names are correct and spelled properly.\n\nValidates complete plant-name strings against APC/APNI and 11 global\ntaxonomic sources. Gemini suggestions are additive and review-required.\n\nAccepts input in multiple formats:\n1. JSON body with { \"species_names\": [...] } - direct list of species names\n2. JSON body with { \"file_url\": \"...\" } - URL to uploaded file (from TUS).\n   Names from file uploads are pre-parsed via LLM so no additional\n   extraction is performed.\n3. Multipart form-data with file field - direct file upload\n\nAuthentication:\n- X-API-Key or Authorization Bearer API key for server-side merchant calls\n- Scoped delegated JWTs remain supported for platform merchant calls\n\nSources queried (in parallel):\n- APC/APNI, GBIF, TNRS (WFO), POWO (Kew), iNaturalist, EOL, ALA,\n  IP Australia PBR, UPOV, WikiSpecies, Wikidata, Wikipedia\n- Google Gemini AI (review suggestion only; excluded from consensus)\n\nResponse structure:\n- results: Array of unified taxonomic records per species\n- summary: Counts of validated / uncertain / not_found\n\nExample:\n```\ncurl -X POST https://api.superseeded.ai/v1/verify/plant-names \\\n  -H \"X-API-Key: sk_...\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"species_names\": [\"Eucalyptus globulus\", \"Acacia melanoxylon\"]}'\n```",
+        "operationId": "verify_plant_names_unified_v1_verify_plant_names_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sources/taxonomic": {
+      "get": {
+        "tags": [
+          "species_validation",
+          "sources"
+        ],
+        "summary": "List Taxonomic Sources",
+        "description": "List all available taxonomic data sources.\n\nReturns information about each source including authority weight,\ndescription, and cache TTL.",
+        "operationId": "list_taxonomic_sources_v1_sources_taxonomic_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flowers/by-color": {
+      "get": {
+        "tags": [
+          "flowers"
+        ],
+        "summary": "Get Flowers By Color",
+        "description": "Find flowers matching a given color.\n\nThis endpoint searches the Floral Reflectance Database (FReD) for flowers\nwhose spectral reflectance produces colors similar to the query. Colors are\nmatched using perceptual distance in CIE LAB color space.\n\n## Color Input Formats\n\n- **Color name**: `red`, `blue`, `lavender`, `coral`, etc.\n- **Hex code**: `#FF5733` or `FF5733`\n- **RGB values**: `rgb(255, 87, 51)` or `255,87,51`\n\n## Bee Color Vision\n\nBees perceive colors differently than humans - they see UV light but not red.\nThe `bee_colour` field indicates how bees perceive the flower:\n- `UV`: Reflects mainly ultraviolet\n- `blue`: Reflects mainly blue wavelengths\n- `blue-green`: Reflects blue and green\n- `UV-blue`: Appears purple to bees\n- `white`: Broad spectrum reflection",
+        "operationId": "get_flowers_by_color_v1_flowers_by_color_get",
+        "parameters": [
+          {
+            "name": "color",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Color to search for. Accepts: color name (e.g., 'red', 'lavender'), hex code (e.g., '#FF5733', 'FF5733'), or RGB (e.g., 'rgb(255,87,51)', '255,87,51')",
+              "title": "Color"
+            },
+            "description": "Color to search for. Accepts: color name (e.g., 'red', 'lavender'), hex code (e.g., '#FF5733', 'FF5733'), or RGB (e.g., 'rgb(255,87,51)', '255,87,51')"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Maximum number of results",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Maximum number of results"
+          },
+          {
+            "name": "human_colour",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by human color category",
+              "title": "Human Colour"
+            },
+            "description": "Filter by human color category"
+          },
+          {
+            "name": "bee_colour",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by bee color category",
+              "title": "Bee Colour"
+            },
+            "description": "Filter by bee color category"
+          },
+          {
+            "name": "family",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by taxonomic family",
+              "title": "Family"
+            },
+            "description": "Filter by taxonomic family"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowerColorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flowers/families": {
+      "get": {
+        "tags": [
+          "flowers"
+        ],
+        "summary": "List Flower Families",
+        "description": "List all plant families in the database with flower counts.\n\nReturns families sorted by the number of flower samples.",
+        "operationId": "list_flower_families_v1_flowers_families_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Flower Families V1 Flowers Families Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flowers/human-colours": {
+      "get": {
+        "tags": [
+          "flowers"
+        ],
+        "summary": "List Human Colours",
+        "description": "List all human-perceived color categories with flower counts.",
+        "operationId": "list_human_colours_v1_flowers_human_colours_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Human Colours V1 Flowers Human Colours Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flowers/bee-colours": {
+      "get": {
+        "tags": [
+          "flowers"
+        ],
+        "summary": "List Bee Colours",
+        "description": "List all bee-perceived color categories with flower counts.\n\nBees have trichromatic vision with UV, Blue, and Green photoreceptors.\nThey cannot see red but can see ultraviolet light invisible to humans.",
+        "operationId": "list_bee_colours_v1_flowers_bee_colours_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Bee Colours V1 Flowers Bee Colours Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flowers/{flower_id}": {
+      "get": {
+        "tags": [
+          "flowers"
+        ],
+        "summary": "Get Flower By Id",
+        "description": "Get complete flower record by FReD database ID.\n\nReturns full metadata including spectral color data, taxonomic classification,\ncollection information, and color space coordinates for both human and bee vision.",
+        "operationId": "get_flower_by_id_v1_flowers__flower_id__get",
+        "parameters": [
+          {
+            "name": "flower_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Flower Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Flower By Id V1 Flowers  Flower Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -62,460 +1489,16 @@
     },
     "/": {
       "get": {
-        "tags": ["System"],
-        "summary": "Service Health Check",
-        "description": "Verifies that the API gateway and underlying matcher services are operational.",
+        "summary": "Read Root",
+        "operationId": "read_root__get",
         "responses": {
           "200": {
-            "description": "Service is healthy",
+            "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "example": "ok"
-                    },
-                    "service": {
-                      "type": "string",
-                      "example": "Superseeded Resolver Service"
-                    },
-                    "version": {
-                      "type": "string",
-                      "example": "1.0.0"
-                    }
-                  }
-                }
+                "schema": {}
               }
             }
-          }
-        }
-      }
-    },
-    "/verify/pot-sizes": {
-      "post": {
-        "tags": ["Resolvers"],
-        "summary": "Resolve Specs",
-        "description": "Unified endpoint for resolving plant specifications. Accepts input as: (1) JSON body with items array, (2) JSON body with file_url from TUS upload, or (3) multipart form-data with direct file upload. Supported file formats: JSON, XLSX, XLS, PDF, TXT, PNG, JPG, JPEG, GIF, WEBP. Authentication: Basic/Pro plans use X-API-Key header; Teams plans with platform integration require Authorization Bearer token.",
-        "operationId": "resolveSpecs",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "description": "Object containing a list of raw spec strings to be resolved, file reference, or direct file upload.",
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File to upload. Supported formats: JSON, XLSX, XLS, PDF, TXT, PNG, JPG, JPEG, GIF, WEBP."
-                  },
-                  "extraction_type": {
-                    "type": "string",
-                    "default": "pot_sizes",
-                    "enum": ["pot_sizes", "species", "generic"],
-                    "description": "What to extract from the file."
-                  }
-                }
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResolveSpecsRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful resolution with detailed hierarchy data.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResolveSpecsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request - Invalid JSON format."
-          },
-          "401": {
-            "description": "Unauthorized - Missing API Key."
-          },
-          "403": {
-            "description": "Forbidden - Invalid API Key."
-          }
-        }
-      }
-    },
-    "/verify/plant-names": {
-      "post": {
-        "tags": ["Validation"],
-        "summary": "Verify Plant Names",
-        "description": "Validate complete botanical name strings against APC/APNI and 11 global taxonomic sources. AI fallback suggestions are review-only and never participate in consensus. Existing response fields are preserved; versioned taxonomic resolution details are additive.",
-        "operationId": "verifyPlantNames",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "description": "Object containing species names to validate or file reference.",
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File to upload. Supports: JSON, XLSX, XLS, CSV, PDF, TXT."
-                  },
-                  "extraction_column": {
-                    "type": "string",
-                    "description": "Column name containing species names for spreadsheet files."
-                  }
-                }
-              }
-            },
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateSpeciesRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful validation with unified taxonomic records.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidateSpeciesResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request - Invalid input or no species names found."
-          },
-          "401": {
-            "description": "Unauthorized - Missing API Key."
-          },
-          "403": {
-            "description": "Forbidden - Invalid API Key or usage limit exceeded."
-          },
-          "500": {
-            "description": "Internal Server Error - Species validation failed."
-          }
-        }
-      }
-    },
-    "/sources/taxonomic": {
-      "get": {
-        "tags": ["Validation"],
-        "summary": "List Taxonomic Sources",
-        "description": "Returns metadata about all 13 taxonomic data sources used by the species validation system, including APC/APNI, authority weights and cache durations. No authentication required.",
-        "operationId": "listTaxonomicSources",
-        "responses": {
-          "200": {
-            "description": "List of taxonomic sources",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TaxonomicSourcesResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/flowers/by-color": {
-      "get": {
-        "tags": ["Flowers"],
-        "summary": "Find Flowers by Color",
-        "description": "Search 2,509 flower spectral measurements to find flowers matching a given color. Colors are matched using perceptual distance in CIE LAB color space. Data source: Arnold SEJ et al., 2010 FReD: The Floral Reflectance Database. PLoS ONE 5(12): e14287.",
-        "operationId": "findFlowersByColor",
-        "parameters": [
-          {
-            "name": "color",
-            "in": "query",
-            "required": true,
-            "description": "Color to search for. Accepts color names (red, lavender), hex codes (#FF5733), or RGB values (rgb(255,87,51) or 255,87,51).",
-            "schema": {
-              "type": "string"
-            },
-            "examples": {
-              "name": { "value": "purple" },
-              "hex": { "value": "#FF5733" },
-              "rgb": { "value": "255,87,51" }
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Maximum number of results (1-100).",
-            "schema": {
-              "type": "integer",
-              "default": 20,
-              "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "family",
-            "in": "query",
-            "description": "Filter by taxonomic family (e.g., Asteraceae).",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "human_colour",
-            "in": "query",
-            "description": "Filter by human-perceived color category.",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "bee_colour",
-            "in": "query",
-            "description": "Filter by bee-perceived color category (UV, blue, blue-green, green, UV-blue, UV-green, white).",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Matching flowers sorted by color similarity",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FlowerColorResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid color format"
-          }
-        }
-      }
-    },
-    "/flowers/families": {
-      "get": {
-        "tags": ["Flowers"],
-        "summary": "List Plant Families",
-        "description": "Returns all plant families in the FReD database with sample counts.",
-        "operationId": "listFlowerFamilies",
-        "responses": {
-          "200": {
-            "description": "List of plant families",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "family": { "type": "string" },
-                      "count": { "type": "integer" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/flowers/human-colours": {
-      "get": {
-        "tags": ["Flowers"],
-        "summary": "List Human Color Categories",
-        "description": "Returns all human-perceived color categories in the database.",
-        "operationId": "listHumanColours",
-        "responses": {
-          "200": {
-            "description": "List of human color categories",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "colour": { "type": "string" },
-                      "count": { "type": "integer" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/flowers/bee-colours": {
-      "get": {
-        "tags": ["Flowers"],
-        "summary": "List Bee Color Categories",
-        "description": "Returns all bee-perceived color categories. Bees see UV, blue, and green but not red.",
-        "operationId": "listBeeColours",
-        "responses": {
-          "200": {
-            "description": "List of bee color categories",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "colour": { "type": "string" },
-                      "count": { "type": "integer" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/flowers/{flower_id}": {
-      "get": {
-        "tags": ["Flowers"],
-        "summary": "Get Flower Record",
-        "description": "Returns complete flower record including taxonomy, collection info, and spectral color space coordinates.",
-        "operationId": "getFlowerById",
-        "parameters": [
-          {
-            "name": "flower_id",
-            "in": "path",
-            "required": true,
-            "description": "FReD database ID",
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Complete flower record",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FlowerRecord"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Flower not found"
-          }
-        }
-      }
-    },
-    "/retail-images/sites": {
-      "post": {
-        "tags": ["Images"],
-        "summary": "Register Storefront Origin",
-        "description": "Register or update a storefront origin allowed to resolve public catalog image URLs for the authenticated account.",
-        "operationId": "registerImageSite",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ImageSiteRegistrationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Storefront origin registered.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageSiteRegistrationResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid site URL."
-          },
-          "401": {
-            "description": "Missing API key."
-          },
-          "403": {
-            "description": "Invalid, inactive, or expired API key."
-          }
-        }
-      }
-    },
-    "/retail-images/resolve": {
-      "post": {
-        "tags": ["Images"],
-        "summary": "Resolve Catalog Images",
-        "description": "Resolve image availability and public image URLs for plant catalog items. This endpoint returns already available imagery and does not trigger new image generation.",
-        "operationId": "resolveCatalogImages",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ImageResolveRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Image availability resolved for each item.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageResolveResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request."
-          },
-          "401": {
-            "description": "Missing API key."
-          },
-          "403": {
-            "description": "Invalid API key or unregistered storefront origin."
-          },
-          "500": {
-            "description": "Image service configuration error."
           }
         }
       }
@@ -523,944 +1506,2391 @@
   },
   "components": {
     "schemas": {
-      "FlowerColorResponse": {
-        "type": "object",
+      "DelegateUploadRequest": {
         "properties": {
-          "query": {
-            "type": "object",
-            "properties": {
-              "input": { "type": "string", "description": "Original color input" },
-              "type": { "type": "string", "enum": ["name", "hex", "rgb"] },
-              "rgb": { "type": "array", "items": { "type": "integer" } },
-              "lab": { "type": "array", "items": { "type": "number" } },
-              "filters": { "type": "object" }
-            }
-          },
-          "matches": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/FlowerMatch" }
-          },
-          "total_in_database": { "type": "integer" },
-          "citation": { "type": "string" }
-        }
-      },
-      "FlowerMatch": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "description": "FReD database ID" },
-          "scientific_name": { "type": "string" },
-          "family": { "type": "string" },
-          "genus": { "type": "string" },
-          "species": { "type": "string" },
-          "human_colour": { "type": "string" },
-          "bee_colour": { "type": "string" },
-          "rgb": { "type": "array", "items": { "type": "integer" } },
-          "hex": { "type": "string" },
-          "lab": { "type": "array", "items": { "type": "number" } },
-          "color_distance": { "type": "number", "description": "Delta E perceptual distance" },
-          "country": { "type": "string" },
-          "collector": { "type": "string" }
-        }
-      },
-      "FlowerRecord": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer" },
-          "taxonomy": {
-            "type": "object",
-            "properties": {
-              "family": { "type": "string" },
-              "genus": { "type": "string" },
-              "species": { "type": "string" },
-              "full_name": { "type": "string" }
-            }
-          },
-          "collection": {
-            "type": "object",
-            "properties": {
-              "country": { "type": "string" },
-              "town": { "type": "string" },
-              "collector": { "type": "string" },
-              "publication": { "type": "string" }
-            }
-          },
-          "classification": {
-            "type": "object",
-            "properties": {
-              "plant_section": { "type": "string" },
-              "human_colour": { "type": "string" },
-              "bee_colour": { "type": "string" }
-            }
-          },
-          "color_spaces": {
-            "type": "object",
-            "properties": {
-              "colour_triangle": { "type": "object" },
-              "colour_hexagon": { "type": "object" },
-              "coc": { "type": "object" }
-            }
-          },
-          "computed_color": {
-            "type": "object",
-            "properties": {
-              "rgb": { "type": "array", "items": { "type": "integer" } },
-              "hex": { "type": "string" },
-              "lab": { "type": "array", "items": { "type": "number" } }
-            }
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id",
+            "description": "External merchant ID from the Platform"
           }
-        }
-      },
-      "RouteDiscoveryResponse": {
+        },
         "type": "object",
+        "required": [
+          "merchant_id"
+        ],
+        "title": "DelegateUploadRequest",
+        "description": "Request body for delegate-upload endpoint."
+      },
+      "DelegateUploadResponse": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "JWT token for delegated upload access"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In",
+            "description": "Token expiry time in seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "expires_in"
+        ],
+        "title": "DelegateUploadResponse",
+        "description": "Response body for delegate-upload endpoint."
+      },
+      "DiscoverRoutesResponse": {
         "properties": {
           "routes": {
-            "type": "array",
-            "description": "List of available post-upload processing routes",
             "items": {
-              "$ref": "#/components/schemas/Route"
-            }
+              "$ref": "#/components/schemas/PostUploadRouteInfo"
+            },
+            "type": "array",
+            "title": "Routes",
+            "description": "Available post-upload routes"
           },
           "version": {
             "type": "string",
-            "description": "API version for the route schema",
-            "example": "1.0"
+            "title": "Version",
+            "description": "API version for route schema",
+            "default": "1.0"
           }
         },
-        "example": {
-          "routes": [
-            {
-              "id": "verify-pot-sizes",
-              "name": "Verify Pot Sizes",
-              "description": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories",
-              "endpoint": "/v1/verify/pot-sizes",
-              "method": "POST",
-              "requires_auth": true,
-              "accepted_file_types": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"],
-              "category": "enrichment"
-            }
-          ],
-          "version": "1.0"
-        }
-      },
-      "Route": {
         "type": "object",
+        "required": [
+          "routes"
+        ],
+        "title": "DiscoverRoutesResponse",
+        "description": "Response for route discovery endpoint."
+      },
+      "EnquiryDraft": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "2026-07-24",
+            "title": "Contract Version",
+            "default": "2026-07-24"
+          },
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "plain_text": {
+            "type": "string",
+            "title": "Plain Text"
+          },
+          "html": {
+            "type": "string",
+            "title": "Html"
+          },
+          "missing_critical_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Critical Fields"
+          },
+          "line_references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Line References"
+          },
+          "ai_generated": {
+            "type": "boolean",
+            "title": "Ai Generated",
+            "default": false
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_revision",
+          "subject",
+          "plain_text",
+          "html"
+        ],
+        "title": "EnquiryDraft"
+      },
+      "FlowerColorMatch": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "FReD database ID"
+          },
+          "scientific_name": {
+            "type": "string",
+            "title": "Scientific Name",
+            "description": "Scientific name (Genus species)"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family",
+            "description": "Taxonomic family"
+          },
+          "genus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genus",
+            "description": "Genus"
+          },
+          "species": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species",
+            "description": "Species epithet"
+          },
+          "human_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Human Colour",
+            "description": "Human-perceived color category"
+          },
+          "bee_colour": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bee Colour",
+            "description": "Bee-perceived color category"
+          },
+          "rgb": {
+            "items": {},
+            "type": "array",
+            "title": "Rgb",
+            "description": "RGB color values (0-255)"
+          },
+          "hex": {
+            "type": "string",
+            "title": "Hex",
+            "description": "Hex color code"
+          },
+          "lab": {
+            "items": {},
+            "type": "array",
+            "title": "Lab",
+            "description": "CIE LAB color values"
+          },
+          "color_distance": {
+            "type": "number",
+            "title": "Color Distance",
+            "description": "Perceptual distance from query (lower is closer)"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country",
+            "description": "Collection country"
+          },
+          "collector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collector",
+            "description": "Sample collector"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scientific_name",
+          "family",
+          "rgb",
+          "hex",
+          "lab",
+          "color_distance"
+        ],
+        "title": "FlowerColorMatch",
+        "description": "A flower matching the color query."
+      },
+      "FlowerColorResponse": {
+        "properties": {
+          "query": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Query",
+            "description": "Parsed query parameters"
+          },
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/FlowerColorMatch"
+            },
+            "type": "array",
+            "title": "Matches",
+            "description": "Matching flowers sorted by color similarity"
+          },
+          "total_in_database": {
+            "type": "integer",
+            "title": "Total In Database",
+            "description": "Total flowers in database"
+          },
+          "citation": {
+            "type": "string",
+            "title": "Citation",
+            "description": "Academic citation for the data source",
+            "default": "Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database — A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "matches",
+          "total_in_database"
+        ],
+        "title": "FlowerColorResponse",
+        "description": "Response from flower color lookup."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IndividualUsageTotals": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "Billing period in YYYY-MM format"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count",
+            "description": "Total rows processed this month"
+          },
+          "billable_row_count": {
+            "type": "integer",
+            "title": "Billable Row Count",
+            "description": "Billable rows processed this month"
+          },
+          "monthly_row_limit": {
+            "type": "integer",
+            "title": "Monthly Row Limit",
+            "description": "Maximum rows allowed per month. Basic plan: 50",
+            "default": 50
+          },
+          "overage_rows": {
+            "type": "integer",
+            "title": "Overage Rows",
+            "description": "Rows exceeding the monthly limit (billable at overage rate)",
+            "default": 0
+          },
+          "remaining_rows": {
+            "type": "integer",
+            "title": "Remaining Rows",
+            "description": "Rows remaining before hitting the monthly limit",
+            "default": 50
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "row_count",
+          "billable_row_count"
+        ],
+        "title": "IndividualUsageTotals",
+        "description": "Current month usage totals for individual users (Basic plan)."
+      },
+      "MatchConfidence": {
+        "type": "string",
+        "enum": [
+          "Exact",
+          "High",
+          "Medium",
+          "Low",
+          "None"
+        ],
+        "title": "MatchConfidence"
+      },
+      "MerchantReferenceImage": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "MerchantReferenceImage"
+      },
+      "MonthlyTotals": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month",
+            "description": "Billing period in YYYY-MM format"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether merchant triggered base fee this month"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count",
+            "description": "Total rows processed this month"
+          },
+          "billable_row_count": {
+            "type": "integer",
+            "title": "Billable Row Count",
+            "description": "Billable rows counting toward quota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "is_active",
+          "row_count",
+          "billable_row_count"
+        ],
+        "title": "MonthlyTotals",
+        "description": "Current month billing totals for a merchant (Teams plan)."
+      },
+      "PostUploadRouteInfo": {
         "properties": {
           "id": {
             "type": "string",
-            "description": "Unique route identifier",
-            "example": "verify-pot-sizes"
+            "title": "Id",
+            "description": "Unique route identifier, e.g., 'resolve-specs'"
           },
           "name": {
             "type": "string",
-            "description": "Human-readable route name for display in UIs",
-            "example": "Resolve Specifications"
+            "title": "Name",
+            "description": "Human-readable route name"
           },
           "description": {
             "type": "string",
-            "description": "Description of what this route does",
-            "example": "Classify pot sizes and plant specifications into Growth Equivalent Hierarchy categories"
+            "title": "Description",
+            "description": "What this route does"
           },
           "endpoint": {
             "type": "string",
-            "description": "Full API endpoint path",
-            "example": "/v1/verify/pot-sizes"
+            "title": "Endpoint",
+            "description": "Full API endpoint path, e.g., '/v1/resolve/specs'"
           },
           "method": {
             "type": "string",
+            "title": "Method",
             "description": "HTTP method",
-            "example": "POST"
+            "default": "POST"
           },
           "requires_auth": {
             "type": "boolean",
-            "description": "Whether the route requires a delegation token",
-            "example": true
+            "title": "Requires Auth",
+            "description": "Whether route requires authentication",
+            "default": true
           },
           "accepted_file_types": {
-            "type": "array",
-            "description": "File extensions this route can process",
             "items": {
               "type": "string"
             },
-            "example": [".json", ".xlsx", ".xls", ".pdf", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".webp"]
+            "type": "array",
+            "title": "Accepted File Types",
+            "description": "File extensions this route can process",
+            "default": [
+              ".json"
+            ]
           },
           "category": {
-            "type": "string",
-            "description": "Optional category for grouping routes",
-            "example": "enrichment"
-          }
-        }
-      },
-      "ResolveSpecsRequest": {
-        "type": "object",
-        "description": "Request body for /verify/pot-sizes. Accepts items array, file_url, or multipart file upload.",
-        "properties": {
-          "items": {
-            "type": "array",
-            "description": "An array of raw strings representing pot sizes or plant states. Takes precedence over file inputs.",
-            "items": {
-              "type": "string"
-            }
-          },
-          "file_url": {
-            "type": "string",
-            "format": "binary",
-            "description": "URL to a previously uploaded file (from TUS storage). Must be from secure.superseeded.ai or api.superseeded.ai."
-          },
-          "filename": {
-            "type": "string",
-            "description": "Optional filename hint for format detection when using file_url."
-          },
-          "extraction_type": {
-            "type": "string",
-            "description": "What to extract from files: pot_sizes, species, or generic.",
-            "default": "pot_sizes"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "Route category for grouping in UI (e.g., 'enrichment', 'validation')"
           }
         },
-        "example": {
-          "items": ["140mm", "400mm AS", "20L Bag", "Ex-Ground"]
-        }
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "endpoint"
+        ],
+        "title": "PostUploadRouteInfo",
+        "description": "Information about a single post-upload processing route."
+      },
+      "ReplyExtraction": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "2026-07-24",
+            "title": "Contract Version",
+            "default": "2026-07-24"
+          },
+          "supply_request_id": {
+            "type": "string",
+            "title": "Supply Request Id"
+          },
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ReplyExtractionLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "extraction_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Extraction Confidence"
+          },
+          "needs_manual_review": {
+            "type": "boolean",
+            "title": "Needs Manual Review",
+            "default": true
+          },
+          "requires_approval": {
+            "type": "boolean",
+            "title": "Requires Approval",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "supply_request_id",
+          "source_revision",
+          "summary",
+          "extraction_confidence"
+        ],
+        "title": "ReplyExtraction"
+      },
+      "ReplyExtractionLine": {
+        "properties": {
+          "supply_request_line_id": {
+            "type": "string",
+            "title": "Supply Request Line Id"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "available",
+              "can_grow",
+              "partial",
+              "unavailable",
+              "alternative_proposed"
+            ],
+            "title": "Outcome"
+          },
+          "confirmable_quantity": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Confirmable Quantity",
+            "default": 0
+          },
+          "offered_grade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offered Grade"
+          },
+          "supplied_dimensions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplied Dimensions"
+          },
+          "ready_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready Start"
+          },
+          "ready_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready End"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "conditions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conditions"
+          },
+          "alternate_canonical_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternate Canonical Species Id"
+          },
+          "alternate_botanical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternate Botanical Name"
+          },
+          "extraction_confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Extraction Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "supply_request_line_id",
+          "outcome",
+          "extraction_confidence"
+        ],
+        "title": "ReplyExtractionLine"
+      },
+      "ReplyExtractionRequest": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "2026-07-24",
+            "title": "Contract Version",
+            "default": "2026-07-24"
+          },
+          "supply_request_id": {
+            "type": "string",
+            "title": "Supply Request Id"
+          },
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "request_lines": {
+            "items": {
+              "$ref": "#/components/schemas/SupplyRequestLine"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Request Lines"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "text_body": {
+            "type": "string",
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Text Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "supply_request_id",
+          "source_revision",
+          "request_lines",
+          "text_body"
+        ],
+        "title": "ReplyExtractionRequest"
       },
       "ResolveSpecsResponse": {
-        "type": "object",
         "properties": {
           "results": {
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResolvedItem"
-            }
+            },
+            "type": "array",
+            "title": "Results"
           }
-        }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "ResolveSpecsResponse"
       },
       "ResolvedItem": {
-        "type": "object",
         "properties": {
           "input_label": {
             "type": "string",
-            "description": "The original raw string provided in the request.",
-            "example": "400mm AS"
+            "title": "Input Label"
           },
           "match_confidence": {
-            "type": "string",
-            "enum": ["Exact", "High", "Medium", "Low", "None"],
-            "description": "The confidence level of the semantic match.",
-            "example": "High"
-          },
-          "external_ids": {
-            "type": "object",
-            "nullable": true,
-            "description": "A map of foreign key IDs from external systems.",
-            "properties": {
-              "evergreenconnect_potsize_id": {
-                "type": "integer",
-                "description": "The precise Evergreen Connect ID if an exact match is found.",
-                "example": 823
-              }
-            }
+            "$ref": "#/components/schemas/MatchConfidence"
           },
           "standard_data": {
-            "$ref": "#/components/schemas/ContainerProfile"
-          }
-        }
-      },
-      "ContainerProfile": {
-        "type": "object",
-        "description": "The standardized biological and logistical profile for this container type.",
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "The standardized unique key for this container type.",
-            "example": "Pot - Air Pruning"
-          },
-          "stage_order": {
-            "type": "integer",
-            "description": "Numeric sort order for biological maturity (0=Seed, 5=Mature, 99=Non-Plant).",
-            "example": 4
-          },
-          "stage_name": {
-            "type": "string",
-            "description": "Human-readable category of the production stage.",
-            "example": "Advanced Production"
-          },
-          "is_biological": {
-            "type": "boolean",
-            "description": "Indicates if the item is a living plant vs hard goods.",
-            "example": true
-          },
-          "matching_strategy": {
-            "type": "string",
-            "description": "Hint for how to compare stock of this type (e.g., Volume vs Diameter).",
-            "example": "Volume"
-          },
-          "logistics": {
-            "type": "object",
-            "properties": {
-              "tier": {
-                "type": "string",
-                "enum": ["Parcel", "Pallet", "Specialized", "N/A"],
-                "example": "Pallet"
-              },
-              "is_stackable": {
-                "type": "boolean",
-                "description": "If true, items can be stacked vertically, reducing freight cost.",
-                "example": false
-              },
-              "freight_efficiency": {
-                "type": "string",
-                "example": "Medium"
-              }
-            }
-          },
-          "quality_profile": {
-            "type": "object",
-            "properties": {
-              "transplant_shock_risk": {
-                "type": "string",
-                "example": "Very Low"
-              },
-              "seasonal_restriction": {
-                "type": "string",
-                "example": "None"
-              },
-              "inspection_focus": {
-                "type": "string",
-                "description": "The primary attribute to check during quality inspection.",
-                "example": "Desiccation"
-              }
-            }
-          },
-          "customer_note": {
-            "type": "string",
-            "description": "User-friendly note explaining the pros/cons of this type.",
-            "example": "Superior root structure; requires more frequent watering until planted."
-          }
-        }
-      },
-      "ValidateSpeciesRequest": {
-        "type": "object",
-        "properties": {
-          "species_names": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of species names to validate",
-            "example": ["Eucalyptus globulus", "Acacia melanoxylon"]
-          },
-          "file_url": {
-            "type": "string",
-            "format": "binary",
-            "description": "URL to uploaded file containing species names",
-            "example": "https://secure.superseeded.ai/files/abc123"
-          },
-          "filename": {
-            "type": "string",
-            "description": "Original filename for context",
-            "example": "species_list.xlsx"
-          },
-          "extraction_column": {
-            "type": "string",
-            "description": "Column name containing species names in spreadsheet files",
-            "example": "Botanical Name"
-          },
-          "sources": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": ["apc_apni", "gbif", "tnrs", "powo", "inaturalist", "eol", "ala", "ip_australia", "upov", "wikispecies", "wikidata", "wikipedia"]
-            },
-            "description": "Specific authoritative sources to attempt. Defaults to APC/APNI and all 11 existing sources. Gemini is never a consensus source and is used only for additive review suggestions.",
-            "example": ["apc_apni", "gbif", "tnrs", "powo"]
-          },
-          "include_metadata": {
-            "type": "boolean",
-            "default": true,
-            "description": "Include detailed taxonomic metadata"
-          },
-          "cache_results": {
-            "type": "boolean",
-            "default": true,
-            "description": "Cache results for future queries"
-          }
-        }
-      },
-      "ValidateSpeciesResponse": {
-        "type": "object",
-        "properties": {
-          "results": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UnifiedTaxonomicRecord"
-            },
-            "description": "Array of unified taxonomic records, one per species"
-          },
-          "summary": {
-            "type": "object",
-            "properties": {
-              "total": {
-                "type": "integer",
-                "description": "Total species processed"
-              },
-              "validated": {
-                "type": "integer",
-                "description": "Count with validated status (high confidence)"
-              },
-              "uncertain": {
-                "type": "integer",
-                "description": "Count with uncertain status (requires review)"
-              },
-              "not_found": {
-                "type": "integer",
-                "description": "Count with not_found status"
-              }
-            }
-          }
-        }
-      },
-      "TaxonomicSourcesResponse": {
-        "type": "object",
-        "properties": {
-          "sources": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TaxonomicSource"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "description": "Total number of available sources"
-          }
-        },
-        "example": {
-          "sources": [
-            {
-              "id": "apc_apni",
-              "name": "Australian Plant Census / APNI",
-              "description": "Versioned APC accepted names, synonyms and APNI fallback",
-              "authority_weight": 1.0,
-              "cache_ttl_hours": 720,
-              "backbone_version": "2026-03-25"
-            }
-          ],
-          "total": 13
-        }
-      },
-      "TaxonomicSource": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Source identifier"
-          },
-          "name": {
-            "type": "string",
-            "description": "Human-readable source name"
-          },
-          "description": {
-            "type": "string",
-            "description": "Brief description of the source"
-          },
-          "authority_weight": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "description": "Weight in consensus algorithm"
-          },
-          "cache_ttl_hours": {
-            "type": "integer",
-            "description": "Cache duration in hours"
-          },
-          "fallback_only": {
-            "type": "boolean",
-            "description": "If true, only used when all other sources return no match (Gemini AI only)"
-          }
-        }
-      },
-      "TaxonomicResolution": {
-        "type": "object",
-        "description": "Versioned APC/APNI name alignment. Exact accepted names and explicit synonym links may validate directly; conservative corrections, APNI-only names, splits and ambiguous results require review.",
-        "externalDocs": {
-          "description": "Open-source resolver, attribution and compatibility details",
-          "url": "https://github.com/superseeded/apcalign-rs"
-        },
-        "required": ["backbone", "backbone_version", "match_kind", "review_required"],
-        "properties": {
-          "backbone": {"type": "string", "example": "APC/APNI"},
-          "backbone_version": {"type": "string", "description": "Pinned APC/APNI release used for this result", "example": "2026-03-25"},
-          "aligned_name": {"type": "string", "nullable": true},
-          "suggested_name": {"type": "string", "nullable": true},
-          "match_kind": {"type": "string", "description": "Typed exact, synonym, fuzzy, APNI, ambiguous or higher-taxon match"},
-          "alignment_code": {"type": "string", "nullable": true},
-          "taxonomic_dataset": {"type": "string", "enum": ["APC", "APNI"], "nullable": true},
-          "alternatives": {"type": "array", "items": {"type": "string"}},
-          "review_required": {"type": "boolean"}
-        }
-      },
-      "ReviewSuggestion": {
-        "type": "object",
-        "required": ["source", "review_required"],
-        "properties": {
-          "source": {"type": "string", "enum": ["gemini"]},
-          "suggested_name": {"type": "string", "nullable": true},
-          "confidence": {"type": "string", "nullable": true},
-          "review_required": {"type": "boolean", "enum": [true]},
-          "details": {"type": "object", "additionalProperties": true}
-        }
-      },
-      "UnifiedTaxonomicRecord": {
-        "type": "object",
-        "properties": {
-          "query": {
-            "type": "object",
-            "properties": {
-              "submitted_name": {
-                "type": "string",
-                "description": "Original species name as submitted"
-              },
-              "normalized_name": {
-                "type": "string",
-                "description": "Lowercase, trimmed version used for matching"
-              },
-              "query_timestamp": {
-                "type": "string",
-                "format": "date-time",
-                "description": "ISO 8601 timestamp of the query"
-              }
-            }
-          },
-          "validation": {
-            "type": "object",
-            "properties": {
-              "status": {
-                "type": "string",
-                "enum": ["validated", "uncertain", "not_found"],
-                "description": "Validation result"
-              },
-              "confidence": {
-                "type": "string",
-                "enum": ["high", "medium", "low"],
-                "description": "Confidence level"
-              },
-              "consensus_score": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0,
-                "description": "0.0-1.0 score based on source agreement"
-              },
-              "sources_checked": {
-                "type": "integer",
-                "description": "Number of authoritative sources attempted, including sources that returned no match or failed"
-              },
-              "sources_matched": {
-                "type": "integer",
-                "description": "Number of sources with a match"
-              },
-              "match_summary": {
-                "type": "object",
-                "properties": {
-                  "exact_matches": {
-                    "type": "integer"
-                  },
-                  "inexact_matches": {
-                    "type": "integer"
-                  },
-                  "no_match": {
-                    "type": "integer"
-                  }
-                }
-              },
-              "source_failures": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Attempted source identifiers that failed independently of no-match results"
-              }
-            }
-          },
-          "resolution": {
-            "allOf": [{"$ref": "#/components/schemas/TaxonomicResolution"}],
-            "nullable": true,
-            "description": "Additive APC/APNI resolution details when that source aligned the name"
-          },
-          "suggestions": {
-            "type": "array",
-            "items": {"$ref": "#/components/schemas/ReviewSuggestion"},
-            "description": "Review-required AI suggestions. These never set accepted_name or validation consensus."
-          },
-          "source_failures": {
-            "type": "array",
-            "items": {"type": "object", "additionalProperties": true},
-            "description": "Per-source operational failures, separate from authoritative no-match results"
-          },
-          "accepted_name": {
-            "type": "object",
-            "properties": {
-              "scientific_name": {
-                "type": "string",
-                "description": "Accepted scientific name determined by consensus"
-              },
-              "author": {
-                "type": "string",
-                "description": "Taxonomic author"
-              },
-              "nomenclatural_status": {
-                "type": "string",
-                "enum": ["accepted", "synonym", "unresolved", "not_found"],
-                "description": "Nomenclatural status"
-              },
-              "common_names": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "language": {
-                      "type": "string"
-                    },
-                    "region": {
-                      "type": "string"
-                    }
-                  }
-                }
-              },
-              "taxonomic_rank": {
-                "type": "string",
-                "description": "Rank: species, subspecies, variety, etc."
-              }
-            }
-          },
-          "taxonomy": {
-            "type": "object",
-            "properties": {
-              "kingdom": {
-                "type": "string",
-                "example": "Plantae"
-              },
-              "family": {
-                "type": "string",
-                "description": "Plant family"
-              },
-              "genus": {
-                "type": "string",
-                "description": "Genus name"
-              },
-              "species": {
-                "type": "string",
-                "description": "Species epithet"
-              },
-              "subspecies": {
-                "type": "string",
-                "nullable": true
-              },
-              "variety": {
-                "type": "string",
-                "nullable": true
-              }
-            }
-          },
-          "cross_references": {
-            "type": "object",
-            "properties": {
-              "gbif_id": {
-                "type": "string",
-                "description": "GBIF taxon key"
-              },
-              "wfo_id": {
-                "type": "string",
-                "description": "World Flora Online ID"
-              },
-              "powo_id": {
-                "type": "string",
-                "description": "Plants of the World Online ID"
-              },
-              "eol_id": {
-                "type": "string",
-                "description": "Encyclopedia of Life page ID"
-              },
-              "ala_guid": {
-                "type": "string",
-                "description": "Atlas of Living Australia GUID"
-              },
-              "wikidata_id": {
-                "type": "string",
-                "description": "Wikidata entity ID"
-              },
-              "inaturalist_taxon_id": {
-                "type": "string",
-                "description": "iNaturalist taxon ID"
-              },
-              "pbr_numbers": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "IP Australia PBR identifiers"
-              },
-              "upov_code": {
-                "type": "string",
-                "description": "UPOV variety code"
-              }
-            }
-          },
-          "metadata": {
-            "type": "object",
-            "properties": {
-              "quality_score": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0,
-                "description": "Overall data quality score"
-              },
-              "api_version": {
-                "type": "string",
-                "description": "API version"
-              },
-              "processing_time_seconds": {
-                "type": "number",
-                "description": "Processing time"
-              },
-              "resolver_version": {
-                "type": "string",
-                "description": "APCalign Rust resolver version when resolution is present"
-              }
-            }
-          },
-          "warnings": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Data quality warnings or conflicts"
-          },
-          "notes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Informational notes about validation"
-          }
-        },
-        "example": {
-          "query": {
-            "submitted_name": "Eucalyptus globulus",
-            "normalized_name": "eucalyptus globulus",
-            "query_timestamp": "2025-01-15T10:30:00Z"
-          },
-          "validation": {
-            "status": "validated",
-            "confidence": "high",
-            "consensus_score": 0.98,
-            "sources_checked": 12,
-            "sources_matched": 9,
-            "match_summary": {
-              "exact_matches": 8,
-              "inexact_matches": 1,
-              "no_match": 0
-            }
-          },
-          "accepted_name": {
-            "scientific_name": "Eucalyptus globulus",
-            "author": "Labill.",
-            "nomenclatural_status": "accepted",
-            "common_names": [
+            "anyOf": [
               {
-                "name": "Tasmanian Blue Gum",
-                "language": "en",
-                "region": "Global"
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
               }
             ],
-            "taxonomic_rank": "species"
+            "title": "Standard Data"
           },
-          "taxonomy": {
-            "kingdom": "Plantae",
-            "family": "Myrtaceae",
-            "genus": "Eucalyptus",
-            "species": "globulus",
-            "subspecies": null,
-            "variety": null
-          },
-          "cross_references": {
-            "gbif_id": "3176787",
-            "wfo_id": "946382",
-            "powo_id": "urn:lsid:ipni.org:names:30001419-2",
-            "eol_id": "301421",
-            "ala_guid": "https://id.biodiversity.org.au/taxon/apni/51440555",
-            "wikidata_id": "Q159528",
-            "inaturalist_taxon_id": "53398",
-            "pbr_numbers": ["1990/106"],
-            "upov_code": "EUCAL_GLO"
-          },
-          "metadata": {
-            "quality_score": 0.9,
-            "api_version": "1.0.0",
-            "processing_time_seconds": 4.67
-          },
-          "warnings": [],
-          "notes": [
-            "Name validated against 9 authoritative botanical databases",
-            "Confirmed by: Taxonomic Name Resolution Service (WFO), Plants of the World Online (Kew Gardens), Global Biodiversity Information Facility"
-          ]
-        }
-      },
-      "ImageSiteRegistrationRequest": {
-        "type": "object",
-        "required": ["site_url"],
-        "properties": {
-          "site_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Storefront URL to register for this account. Paths and query strings are normalized to the site origin."
-          },
-          "label": {
-            "type": "string",
-            "nullable": true,
-            "description": "Optional human-readable name for the storefront."
+          "external_ids": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ids"
           }
-        }
-      },
-      "ImageSiteRegistrationResponse": {
+        },
         "type": "object",
-        "required": ["site_url", "normalized_origin", "active"],
+        "required": [
+          "input_label",
+          "match_confidence"
+        ],
+        "title": "ResolvedItem"
+      },
+      "RetailImageResolveItem": {
+        "properties": {
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku"
+          },
+          "ss_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ss Species Id"
+          },
+          "species_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Key"
+          },
+          "botanical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Botanical Name"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name"
+          },
+          "merchant_reference_images": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantReferenceImage"
+            },
+            "type": "array",
+            "title": "Merchant Reference Images"
+          }
+        },
+        "type": "object",
+        "title": "RetailImageResolveItem"
+      },
+      "RetailImageResolveRequest": {
         "properties": {
           "site_url": {
             "type": "string",
-            "format": "uri"
+            "title": "Site Url"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RetailImageResolveItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "generation_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_url"
+        ],
+        "title": "RetailImageResolveRequest"
+      },
+      "RetailImageResolveResponse": {
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
           },
           "normalized_origin": {
             "type": "string",
-            "description": "Canonical storefront origin allowed for image resolution."
+            "title": "Normalized Origin"
           },
-          "active": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ImageResolveItem": {
-        "type": "object",
-        "properties": {
-          "product_id": {
-            "type": "integer",
-            "nullable": true,
-            "description": "Optional catalog product ID echoed in the result."
-          },
-          "sku": {
-            "type": "string",
-            "nullable": true,
-            "description": "Optional SKU echoed in the result."
-          },
-          "species_key": {
-            "type": "string",
-            "nullable": true,
-            "description": "Plant identifier used by your catalog or integration."
-          },
-          "botanical_name": {
-            "type": "string",
-            "nullable": true,
-            "description": "Botanical name to use when species_key is not provided."
-          },
-          "product_name": {
-            "type": "string",
-            "nullable": true,
-            "description": "Optional product name for your own correlation."
-          }
-        }
-      },
-      "ImageResolveRequest": {
-        "type": "object",
-        "required": ["site_url", "items"],
-        "properties": {
-          "site_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Registered storefront URL for this request."
-          },
-          "items": {
-            "type": "array",
-            "maxItems": 100,
+          "results": {
             "items": {
-              "$ref": "#/components/schemas/ImageResolveItem"
-            }
+              "$ref": "#/components/schemas/RetailImageResult"
+            },
+            "type": "array",
+            "title": "Results"
           }
-        }
-      },
-      "ImageResolveResult": {
+        },
         "type": "object",
-        "required": ["status", "source_status"],
+        "required": [
+          "site_url",
+          "normalized_origin",
+          "results"
+        ],
+        "title": "RetailImageResolveResponse"
+      },
+      "RetailImageResult": {
         "properties": {
           "product_id": {
-            "type": "integer",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
           },
           "sku": {
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku"
           },
           "species_key": {
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Key"
+          },
+          "ss_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ss Species Id"
+          },
+          "canonical_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Key"
+          },
+          "accepted_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "identity_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Status"
           },
           "species_hash": {
-            "type": "string",
-            "nullable": true,
-            "description": "Stable opaque identifier for the resolved plant image."
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Hash"
           },
           "status": {
             "type": "string",
-            "enum": ["available", "missing", "invalid"],
-            "description": "Image availability status."
+            "title": "Status"
           },
           "image_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true,
-            "description": "Public image URL when status is available."
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
           },
           "thumbnail_url": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true,
-            "description": "Optional public thumbnail URL when available."
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
           },
           "version": {
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           },
           "source_status": {
             "type": "string",
-            "description": "High-level source status for the resolved image."
+            "title": "Source Status"
           },
           "message": {
-            "type": "string",
-            "nullable": true
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "generation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Status"
+          },
+          "generation_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Job Id"
+          },
+          "generation_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Stage"
+          },
+          "retry_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After Seconds"
           }
-        }
-      },
-      "ImageResolveResponse": {
+        },
         "type": "object",
-        "required": ["site_url", "normalized_origin", "results"],
+        "required": [
+          "status",
+          "source_status"
+        ],
+        "title": "RetailImageResult"
+      },
+      "RetailImageSiteRequest": {
         "properties": {
           "site_url": {
             "type": "string",
-            "format": "uri"
+            "title": "Site Url"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_url"
+        ],
+        "title": "RetailImageSiteRequest"
+      },
+      "RetailImageSiteResponse": {
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
           },
           "normalized_origin": {
-            "type": "string"
+            "type": "string",
+            "title": "Normalized Origin"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_url",
+          "normalized_origin"
+        ],
+        "title": "RetailImageSiteResponse"
+      },
+      "SDMGenerateRequest": {
+        "properties": {
+          "species_name": {
+            "type": "string",
+            "title": "Species Name",
+            "description": "Scientific name of the species"
+          },
+          "gcm": {
+            "type": "string",
+            "title": "Gcm",
+            "description": "Global Climate Model",
+            "default": "mpi-esm1-2-hr"
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario",
+            "description": "Emission scenario (ssp126, ssp245, ssp370, ssp585)",
+            "default": "ssp585"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period",
+            "description": "Future time period (2030, 2050, 2070)",
+            "default": "2070"
+          },
+          "threshold": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Threshold",
+            "description": "Suitability threshold for classification",
+            "default": 0.5
+          },
+          "include_gradient_maps": {
+            "type": "boolean",
+            "title": "Include Gradient Maps",
+            "description": "Generate gradient suitability maps",
+            "default": true
+          },
+          "cache_tif_files": {
+            "type": "boolean",
+            "title": "Cache Tif Files",
+            "description": "Cache downloaded TIF files",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "species_name"
+        ],
+        "title": "SDMGenerateRequest",
+        "description": "Request model for SDM generation."
+      },
+      "SDMGenerateResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "status_url": {
+            "type": "string",
+            "title": "Status Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "message",
+          "status_url"
+        ],
+        "title": "SDMGenerateResponse",
+        "description": "Response model for SDM generation."
+      },
+      "SDMStatusResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
           },
           "results": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ImageResolveResult"
-            }
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results"
+          },
+          "plots": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plots"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           }
-        }
-      }
-    },
-    "securitySchemes": {
-      "ApiKeyAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "X-API-Key",
-        "description": "Standard API Key authentication."
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "SDMStatusResponse",
+        "description": "Response model for SDM job status."
+      },
+      "SpeciesImageGenerationRequest": {
+        "properties": {
+          "species_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Name"
+          },
+          "ss_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ss Species Id"
+          },
+          "species_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Key"
+          },
+          "camera_view": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera View"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "site_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Url"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Name"
+          },
+          "sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sku"
+          },
+          "merchant_reference_images": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantReferenceImage"
+            },
+            "type": "array",
+            "title": "Merchant Reference Images"
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation"
+          },
+          "edit_instruction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edit Instruction"
+          },
+          "edit_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edit Preset"
+          },
+          "source_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Image Url"
+          },
+          "source_generation_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Generation Job Id"
+          }
+        },
+        "type": "object",
+        "title": "SpeciesImageGenerationRequest"
+      },
+      "SpeciesImageGenerationResponse": {
+        "properties": {
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "species": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpeciesImageIdentityResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "camera_view": {
+            "type": "string",
+            "title": "Camera View",
+            "default": "top"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "species_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Key"
+          },
+          "species_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Species Hash"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "retry_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SpeciesImageGenerationResponse"
+      },
+      "SpeciesImageIdentityResponse": {
+        "properties": {
+          "ss_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ss Species Id"
+          },
+          "canonical_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Key"
+          },
+          "accepted_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Name"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "type": "object",
+        "title": "SpeciesImageIdentityResponse"
+      },
+      "SubstitutionSearchRequest": {
+        "properties": {
+          "source_canonical_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Canonical Species Id"
+          },
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "design_intent": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Design Intent"
+          },
+          "validated_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ValidatedSubstitutionCandidate"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Validated Candidates"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 8
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_revision",
+          "design_intent"
+        ],
+        "title": "SubstitutionSearchRequest"
+      },
+      "SubstitutionSearchResponse": {
+        "properties": {
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ValidatedSubstitutionCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "abstained": {
+            "type": "boolean",
+            "title": "Abstained"
+          },
+          "ai_explanations_generated": {
+            "type": "boolean",
+            "title": "Ai Explanations Generated",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_revision",
+          "candidates",
+          "abstained"
+        ],
+        "title": "SubstitutionSearchResponse"
+      },
+      "SupplyRequestLine": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "schedule_line_id": {
+            "type": "string",
+            "title": "Schedule Line Id"
+          },
+          "canonical_species_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Species Id"
+          },
+          "botanical_name": {
+            "type": "string",
+            "title": "Botanical Name"
+          },
+          "common_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Common Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Quantity"
+          },
+          "target_grade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Grade"
+          },
+          "container_volume_l": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Container Volume L"
+          },
+          "supplied_dimensions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplied Dimensions"
+          },
+          "timing_status": {
+            "type": "string",
+            "title": "Timing Status"
+          },
+          "timing_confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timing Confidence"
+          },
+          "timing_evidence": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "$ref": "#/components/schemas/TimingEvidenceSnapshot"
+              }
+            ],
+            "title": "Timing Evidence"
+          },
+          "substitutions_allowed": {
+            "type": "boolean",
+            "title": "Substitutions Allowed",
+            "default": true
+          },
+          "alternate_grades_allowed": {
+            "type": "boolean",
+            "title": "Alternate Grades Allowed",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_line_id",
+          "botanical_name",
+          "quantity",
+          "timing_status"
+        ],
+        "title": "SupplyRequestLine"
+      },
+      "SupplyRequestSnapshot": {
+        "properties": {
+          "contract_version": {
+            "type": "string",
+            "const": "2026-07-24",
+            "title": "Contract Version",
+            "default": "2026-07-24"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "owner_type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "group"
+            ],
+            "title": "Owner Type"
+          },
+          "owner_id": {
+            "type": "string",
+            "title": "Owner Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "client_project_key": {
+            "type": "string",
+            "title": "Client Project Key"
+          },
+          "source_revision": {
+            "type": "string",
+            "title": "Source Revision"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": "Plant supply enquiry"
+          },
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "region_label": {
+            "type": "string",
+            "title": "Region Label"
+          },
+          "exact_location_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Location Label"
+          },
+          "horizon_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Horizon Start"
+          },
+          "horizon_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Horizon End"
+          },
+          "quality_requirements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Requirements"
+          },
+          "delivery_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Notes"
+          },
+          "substitutions_allowed": {
+            "type": "boolean",
+            "title": "Substitutions Allowed",
+            "default": true
+          },
+          "alternate_grades_allowed": {
+            "type": "boolean",
+            "title": "Alternate Grades Allowed",
+            "default": true
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SupplyRequestLine"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner_type",
+          "owner_id",
+          "client_project_key",
+          "source_revision",
+          "region_label",
+          "horizon_start",
+          "horizon_end",
+          "lines"
+        ],
+        "title": "SupplyRequestSnapshot"
+      },
+      "TimingEvidenceSnapshot": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "evidence_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Tier"
+          },
+          "duration_weeks": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Weeks"
+          },
+          "assessed_at": {
+            "type": "string",
+            "title": "Assessed At"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "assessed_at"
+        ],
+        "title": "TimingEvidenceSnapshot"
+      },
+      "TusHookRequest": {
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "Path to the processed file"
+          },
+          "merchant_id": {
+            "type": "string",
+            "title": "Merchant Id",
+            "description": "Merchant ID from JWT claims"
+          },
+          "api_key_id": {
+            "type": "string",
+            "title": "Api Key Id",
+            "description": "API key ID from JWT claims"
+          },
+          "extracted_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Extracted Data",
+            "description": "Parsed file data including line_items and metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_path",
+          "merchant_id",
+          "api_key_id",
+          "extracted_data"
+        ],
+        "title": "TusHookRequest",
+        "description": "Request body for tus-hook endpoint (from file parser)."
+      },
+      "TusHookResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageEventResult"
+          },
+          "enriched_data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Enriched Data",
+            "description": "Enriched line items with stock availability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "usage"
+        ],
+        "title": "TusHookResponse",
+        "description": "Response body for tus-hook endpoint."
+      },
+      "UsageEventResult": {
+        "properties": {
+          "is_billable": {
+            "type": "boolean",
+            "title": "Is Billable",
+            "description": "Whether this usage counts toward billing"
+          },
+          "rows_processed": {
+            "type": "integer",
+            "title": "Rows Processed",
+            "description": "Number of rows processed in this event"
+          },
+          "file_origin": {
+            "type": "string",
+            "title": "File Origin",
+            "description": "Origin identifier of the file"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Detailed usage metrics for observability"
+          },
+          "current_month_totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonthlyTotals"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current month totals (only for Teams plan users with metered billing)"
+          },
+          "individual_usage_totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndividualUsageTotals"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current month totals for individual users (Basic plan with row limits)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_billable",
+          "rows_processed",
+          "file_origin"
+        ],
+        "title": "UsageEventResult",
+        "description": "Result of processing a usage event."
+      },
+      "UsageMetrics": {
+        "properties": {
+          "rows_processed": {
+            "type": "integer",
+            "title": "Rows Processed",
+            "description": "Number of rows processed in this event"
+          },
+          "llm_calls": {
+            "type": "integer",
+            "title": "Llm Calls",
+            "description": "Total number of LLM calls made"
+          },
+          "metrics_per_item": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Metrics Per Item",
+            "description": "Calculated metrics per item (e.g. average_llm_calls_per_row)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows_processed",
+          "llm_calls",
+          "metrics_per_item"
+        ],
+        "title": "UsageMetrics",
+        "description": "Observability metrics for LLM usage."
+      },
+      "ValidatedSubstitutionCandidate": {
+        "properties": {
+          "canonical_species_id": {
+            "type": "string",
+            "title": "Canonical Species Id"
+          },
+          "botanical_name": {
+            "type": "string",
+            "title": "Botanical Name"
+          },
+          "common_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Common Name"
+          },
+          "structured_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Structured Score"
+          },
+          "semantic_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic Score"
+          },
+          "supply_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supply Score"
+          },
+          "preserved_traits": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Preserved Traits"
+          },
+          "compromises": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Compromises"
+          },
+          "timing_effect": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timing Effect"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "canonical_species_id",
+          "botanical_name",
+          "structured_score"
+        ],
+        "title": "ValidatedSubstitutionCandidate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       }
     }
   }
