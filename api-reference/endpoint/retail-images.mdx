@@ -19,6 +19,8 @@ The Images API supports backend catalog and storefront integrations. Use it to r
 |----------|---------|
 | `POST /v1/retail-images/sites` | Register or update a storefront origin for your account. |
 | `POST /v1/retail-images/resolve` | Resolve image availability and public image URLs for product items. |
+| `POST /v1/retail-images/batches` | Submit a batch of up to five plants for background resolution. |
+| `GET /v1/retail-images/batches/{job_id}` | Read saved status and results. |
 
 ## Authentication
 
@@ -63,6 +65,16 @@ curl -X POST https://api.superseeded.ai/v1/retail-images/resolve \
     ]
   }'
 ```
+
+## Asynchronous batch resolution
+
+When enabled for the API deployment, `POST /v1/retail-images/batches` accepts one to five items using the same fields as `/resolve`, plus a client-generated UUID `request_id`. It saves the request and returns HTTP 202 with `job_id`, `status`, and `retry_after_seconds`. The request does not wait for identity matching or image-cache resolution.
+
+Reuse the same `request_id` when retrying a submission after a timeout. Reusing that ID with different content returns HTTP 409. A batch belongs to the submitting API key, merchant and registered storefront origin.
+
+Poll `GET /v1/retail-images/batches/{job_id}?site_url=https%3A%2F%2Fexample-garden-centre.com` with the same authentication. Polling reads saved results and does not perform image resolution. Batch status is `queued`, `running`, `complete` or `failed`. Only `complete` contains resolved item results. Completion of resolution does not mean every image is ready: individual items can still be `generating` or `identity_pending` and need a later resolution request.
+
+Failed worker invocations are retried up to three times. Completed and failed batches are retained for seven days. If a polling request returns HTTP 404 after retention, submit a new batch with a new request ID. HTTP 501 on submission means this deployment has not enabled batch resolution; integrations can use the synchronous `/resolve` endpoint until rollout is complete.
 
 ## Status Values
 

@@ -1502,6 +1502,165 @@
           }
         }
       }
+    },
+    "/v1/retail-images/batches": {
+      "post": {
+        "tags": [
+          "Retail Images"
+        ],
+        "summary": "Submit Retail Image Batch",
+        "operationId": "submit_retail_image_batch_v1_retail_images_batches_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetailImageBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailImageBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/retail-images/batches/{job_id}": {
+      "get": {
+        "tags": [
+          "Retail Images"
+        ],
+        "summary": "Get Retail Image Batch",
+        "operationId": "get_retail_image_batch_v1_retail_images_batches__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "site_url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Url"
+            }
+          },
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetailImageBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1774,7 +1933,7 @@
             "type": "string",
             "title": "Citation",
             "description": "Academic citation for the data source",
-            "default": "Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database — A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287"
+            "default": "Arnold SEJ, Faruq S, Savolainen V, McOwan PW, Chittka L, 2010 FReD: The Floral Reflectance Database \u2014 A Web Portal for Analyses of Flower Colour. PLoS ONE 5(12): e14287. doi:10.1371/journal.pone.0014287"
           }
         },
         "type": "object",
@@ -2316,6 +2475,21 @@
       },
       "RetailImageResolveItem": {
         "properties": {
+          "catalogue_only": {
+            "type": "boolean",
+            "title": "Catalogue Only",
+            "default": false
+          },
+          "name_reviewed": {
+            "type": "boolean",
+            "title": "Name Reviewed",
+            "default": false
+          },
+          "retry_failed": {
+            "type": "boolean",
+            "title": "Retry Failed",
+            "default": false
+          },
           "product_id": {
             "anyOf": [
               {
@@ -3891,6 +4065,93 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "RetailImageBatchResponse": {
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
+          },
+          "normalized_origin": {
+            "type": "string",
+            "title": "Normalized Origin"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/RetailImageResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "complete",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "retry_after_seconds": {
+            "type": "integer",
+            "title": "Retry After Seconds",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_url",
+          "normalized_origin",
+          "job_id",
+          "status"
+        ],
+        "title": "RetailImageBatchResponse"
+      },
+      "RetailImageBatchRequest": {
+        "properties": {
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RetailImageResolveItem"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Items"
+          },
+          "generation_mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Mode"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_url",
+          "items",
+          "request_id"
+        ],
+        "title": "RetailImageBatchRequest"
       }
     }
   }
