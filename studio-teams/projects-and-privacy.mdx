@@ -7,12 +7,13 @@ Workspace storage and external AI are separate decisions. Managed storage keeps 
 
 ## Set the workspace AI policy
 
-External AI is **on by default**. New workspaces allow the listed providers with either company or personal keys. An owner, admin or member with **Manage AI settings and company provider keys** can change this in **Workspaces → External AI**. [Open workspace settings](https://superseeded.ai/account?section=Workspaces)
+External AI is **on by default**. New workspaces use shared SuperSeeded compute credits for the listed providers. Administrators can change the funding method or block a provider. An owner, admin or member with **Manage AI settings and company provider keys** can change this in **Workspaces → External AI**. [Open workspace settings](https://superseeded.ai/account?section=Workspaces)
 
-To disable external processing for supported Studio AI commands, clear **Allow external AI for workspace projects** and choose **Save AI settings**. To permit selected providers, enable the setting, choose a key option for each provider and save.
+To disable external processing for supported Studio AI commands, clear **Allow external AI for workspace projects** and choose **Save AI settings**. To permit selected providers, enable the setting, choose how the workspace pays for each provider and save.
 
 | Provider setting | Whose provider account is used? |
 | --- | --- |
+| **Workspace compute credits** | SuperSeeded pays the provider and deducts the cost from the organisation’s shared compute balance. |
 | **Blocked** | Studio blocks workspace requests to this provider. |
 | **Company key only** | The request uses the company key configured for this provider in this workspace. |
 | **Personal key only** | Studio uses the employee’s key stored on their device and contacts the provider directly. |
