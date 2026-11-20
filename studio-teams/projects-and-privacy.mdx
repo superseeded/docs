@@ -1,0 +1,42 @@
+---
+title: "Projects, privacy and keys"
+description: "Share project versions, choose which AI providers may receive project content and manage organisation credentials."
+---
+
+Workspace storage and external AI are separate decisions. Managed storage keeps shared project files encrypted at rest in Sydney. A local-only workspace keeps shared uploads and downloads disabled. In either arrangement, an approved external AI provider can process project content outside Australia. Review both settings before working with confidential client material.
+
+## Set the workspace AI policy
+
+External AI is **on by default**. New workspaces allow the listed providers with either company or personal keys. An owner, admin or member with **Manage AI settings and company provider keys** can change this in **Workspaces → External AI**. [Open workspace settings](https://superseeded.ai/account?section=Workspaces)
+
+To disable external processing for supported Studio AI commands, clear **Allow external AI for workspace projects** and choose **Save AI settings**. To permit selected providers, enable the setting, choose a key option for each provider and save.
+
+| Provider setting | Whose provider account is used? |
+| --- | --- |
+| **Blocked** | Studio blocks workspace requests to this provider. |
+| **Company key only** | The request uses the company key configured for this provider in this workspace. |
+| **Personal key only** | Studio uses the employee’s key stored on their device and contacts the provider directly. |
+| **Company or personal key** | Studio uses the employee’s saved key first. If they have no personal key for that provider, it uses the configured company key. |
+
+If your organisation needs all provider usage billed to its own account, choose **Company key only**, enter the key under **Company provider keys** and select **Save company key**. Studio checks the originating workspace’s policy before sending a request. A failed verification blocks the request, and a provider error ends that attempt. A change to the policy cannot recall content a provider has already received.
+
+Workspace AI controls apply to supported commands such as chat, planting-mix names and report drafting. Cloud PDF extraction, image generation and street imagery assessment are unavailable for Teams projects.
+
+## Share and retrieve project versions
+
+In a workspace with managed storage, select the organisation in Studio under **File → Workspace**. Choose **Share a project copy** to publish the open design. Sharing creates a separate workspace version and preserves the original personal file.
+
+To continue a colleague’s design, choose **Browse shared projects**, select the project and choose **Open latest version**. After editing, choose **Publish next version**. If a colleague has already published a newer version, retain your local edits, open the latest version and reconcile the changes before publishing. **View version history** lets you open an earlier version.
+
+In the account hub, use **Shared projects and files** to attach a supporting file, publish another version of an attachment or download a specific version. Before your contract ends, collect all versions and attachments you need while workspace access is active.
+
+## Replace or revoke a key
+
+- **Company AI provider key.** Under **External AI → Company provider keys**, select the provider. Enter and save a replacement, or choose **Remove company key**. If the old key was exposed, revoke it in the provider’s own account as well. Employees’ personal keys are managed on their devices.
+- **Workspace API key.** Use this for an integration that reads or publishes shared files. Under **Workspace API keys**, name the integration, enable **Allow publishing files** only if needed, then choose **Create key**. Copy the secret when it appears and store it in your organisation’s secret manager. **Replace key** invalidates the old key immediately, so coordinate the change with the integration owner. Choose **Revoke** when the integration is retired.
+
+## Retention and deletion
+
+A member with delete permission can choose **Delete version** to remove one version, or **Delete item** to remove a file or project and its versions. Shared access to the deleted content ends immediately and permanent removal from managed storage begins. Copies already downloaded and device backups remain under the recipient’s control.
+
+If your organisation needs a specific backup retention period, restore commitment, processing location or evidence of deletion, agree on those details with SuperSeeded before uploading client material. For a suspected disclosure, identify the workspace, affected item or key name and approximate time. Keep secret key values and client files out of the support email. [Contact SuperSeeded](mailto:hi@superseeded.ai)

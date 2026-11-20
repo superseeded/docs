@@ -44,6 +44,20 @@
         ]
       },
       {
+        "tab": "Studio Teams",
+        "groups": [
+          {
+            "group": "Enterprise workspace",
+            "pages": [
+              "studio-teams/get-started",
+              "studio-teams/subscription-and-invoices",
+              "studio-teams/members-and-roles",
+              "studio-teams/projects-and-privacy"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API reference",
         "groups": [
           {
